@@ -6,9 +6,9 @@
 #
 #    https://shiny.posit.co/
 #
-
 library(shiny)
 library(shinydashboard)
+library(plotly)
 
 ui <- dashboardPage(
   dashboardHeader(title = "Analyse Tennis"),
@@ -16,14 +16,23 @@ ui <- dashboardPage(
   dashboardSidebar(
     sidebarMenu(
       menuItem("Chargement des fichiers", tabName = "upload", icon = icon("file-upload")),
-      menuItem("Paramètres des tarifs", tabName = "tarifs", icon = icon("cogs")),
-      menuItem("Statistiques", tabName = "stats", icon = icon("chart-bar"))
+      menuItem("Gestion des Tarifs", tabName = "tarifs", icon = icon("tags")),
+      menuItem("Analyses", tabName = "analyses", icon = icon("chart-bar"),
+               menuSubItem("Nb de réservation tot", tabName = "total"),
+               menuSubItem("Nb de réservation tot H et F", tabName = "total_hf"),
+               menuSubItem("Nb de réservation par catégorie", tabName = "par_categorie"),
+               menuSubItem("Nb de réservation par catégorie H et F", tabName = "par_categorie_hf"),
+               menuSubItem("Nb de réservation par heures", tabName = "par_heures"),
+               menuSubItem("Nb de réservation par heures et catégorie", tabName = "par_heures_categorie"),
+               menuSubItem("Nb de réservation par jour", tabName = "par_jour"),
+               menuSubItem("Nb de réservation par jour et catégorie", tabName = "par_jour_categorie")
+      )
     )
   ),
   
   dashboardBody(
     tabItems(
-      # Onglet Chargement des fichiers
+      # Onglet de chargement des fichiers
       tabItem(tabName = "upload",
               fluidRow(
                 box(
@@ -55,33 +64,89 @@ ui <- dashboardPage(
                 )
               )
       ),
-      # Onglet Paramètres des tarifs
+      
+      # Onglet de gestion des tarifs
       tabItem(tabName = "tarifs",
               fluidRow(
                 box(
-                  title = "Combiner les tarifs",
+                  title = "Regrouper les Tarifs",
                   width = 6,
-                  textInput("group_name", "Nom du groupe :", placeholder = "Ex. Groupe A"),
+                  textInput("group_name", "Nom du groupe :", ""),
                   uiOutput("tarif_selector"),
-                  actionButton("add_group", "Ajouter au groupe"),
-                  actionButton("apply_tarif_settings", "Appliquer les paramètres")
+                  actionButton("add_group", "Ajouter le groupe")
                 ),
                 box(
-                  title = "Aperçu des regroupements",
+                  title = "Supprimer un Tarif",
                   width = 6,
-                  tableOutput("preview_tarifs")
+                  uiOutput("tarif_removal_selector"),
+                  actionButton("remove_tarif", "Supprimer le tarif")
+                )
+              ),
+              fluidRow(
+                box(
+                  title = "Aperçu des Regroupements",
+                  width = 8,
+                  tableOutput("preview_tarifs"),
+                  actionButton("apply_tarif_settings", "Appliquer les regroupements")
                 )
               )
       ),
       
-      # Onglet Statistiques
-      tabItem(tabName = "stats",
+      # Onglets d'analyses
+      tabItem(tabName = "total",
               fluidRow(
-                box(
-                  title = "Statistiques globales",
-                  width = 12,
-                  tableOutput("statistiques_table")
-                )
+                box(title = "Graphique des Réservations Totales", width = 12,
+                    textInput("title_total", "Titre du graphique :", "Réservations Totales"),
+                    plotlyOutput("plot_total"))
+              )
+      ),
+      tabItem(tabName = "total_hf",
+              fluidRow(
+                box(title = "Graphique des Réservations Totales H et F", width = 12,
+                    textInput("title_total_hf", "Titre du graphique :", "Réservations Totales H et F"),
+                    plotlyOutput("plot_total_hf"))
+              )
+      ),
+      tabItem(tabName = "par_categorie",
+              fluidRow(
+                box(title = "Graphique par Catégorie", width = 12,
+                    textInput("title_par_categorie", "Titre du graphique :", "Réservations par Catégorie"),
+                    plotlyOutput("plot_par_categorie"))
+              )
+      ),
+      tabItem(tabName = "par_categorie_hf",
+              fluidRow(
+                box(title = "Graphique par Catégorie H et F", width = 12,
+                    textInput("title_par_categorie_hf", "Titre du graphique :", "Réservations par Catégorie H et F"),
+                    plotlyOutput("plot_par_categorie_hf"))
+              )
+      ),
+      tabItem(tabName = "par_heures",
+              fluidRow(
+                box(title = "Graphique par Heures", width = 12,
+                    textInput("title_par_heures", "Titre du graphique :", "Réservations par Heures"),
+                    plotlyOutput("plot_par_heures"))
+              )
+      ),
+      tabItem(tabName = "par_heures_categorie",
+              fluidRow(
+                box(title = "Graphique par Heures et Catégorie", width = 12,
+                    textInput("title_par_heures_categorie", "Titre du graphique :", "Réservations par Heures et Catégorie"),
+                    plotlyOutput("plot_par_heures_categorie"))
+              )
+      ),
+      tabItem(tabName = "par_jour",
+              fluidRow(
+                box(title = "Graphique par Jour", width = 12,
+                    textInput("title_par_jour", "Titre du graphique :", "Réservations par Jour"),
+                    plotlyOutput("plot_par_jour"))
+              )
+      ),
+      tabItem(tabName = "par_jour_categorie",
+              fluidRow(
+                box(title = "Graphique par Jour et Catégorie", width = 12,
+                    textInput("title_par_jour_categorie", "Titre du graphique :", "Réservations par Jour et Catégorie"),
+                    plotlyOutput("plot_par_jour_categorie"))
               )
       )
     )

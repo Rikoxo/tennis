@@ -17,6 +17,7 @@
 library(shiny)
 library(dplyr)
 library(tidyr)
+library(plotly)
 
 server <- function(input, output, session) {
   # Réactifs pour stocker les données
@@ -25,6 +26,8 @@ server <- function(input, output, session) {
   combined_data <- reactiveVal(NULL)
   grouped_tarifs <- reactiveVal(NULL)
   tarif_groups <- reactiveVal(list()) # Stockage des groupes de tarifs
+  available_tarifs <- reactiveVal(NULL) # Tarifs disponibles (modifiable)
+  applied_tarifs <- reactiveVal(data.frame(Groupe = character(), Tarifs = list(), stringsAsFactors = FALSE))  
   
   # Fonction de nettoyage des libellés
   clean_labels <- function(df, column_name = "Libellé") {
@@ -83,13 +86,28 @@ server <- function(input, output, session) {
       left_join(inscrits_data(), by = c("joueurs" = "Nom.Prénom"))
     
     combined_data(combined)
+    
+    # Mettre à jour les tarifs disponibles
+    available_tarifs(combined_data() %>%
+                       filter(Type == "Réservation Joueur") %>%
+                       pull(`Tarif.attribué`) %>%
+                       unique())
   })
   
-  # Dynamique : Sélection des tarifs
+  # Dynamique : Sélection des tarifs à regrouper
   output$tarif_selector <- renderUI({
-    req(combined_data())
-    tarifs <- unique(combined_data()$`Tarif.attribué`)
-    checkboxGroupInput("tarif_choices", "Choisissez les tarifs à regrouper :", choices = tarifs, selected = NULL)
+    req(available_tarifs())
+    checkboxGroupInput("tarif_choices", "Choisissez les tarifs à regrouper :", 
+                       choices = available_tarifs(), 
+                       selected = NULL)
+  })
+  
+  # Dynamique : Sélection des tarifs à supprimer
+  output$tarif_removal_selector <- renderUI({
+    req(available_tarifs())
+    checkboxGroupInput("tarif_to_remove", "Sélectionnez un tarif à supprimer :", 
+                choices = available_tarifs(), 
+                selected = NULL)
   })
   
   # Ajouter un groupe de tarifs
@@ -108,27 +126,78 @@ server <- function(input, output, session) {
     updateCheckboxGroupInput(session, "tarif_choices", selected = NULL)
   })
   
+  # Supprimer un tarif
+  observeEvent(input$remove_tarif, {
+    req(input$tarif_to_remove, available_tarifs())
+    
+    # Retirer le tarif sélectionné de la liste des tarifs disponibles
+    updated_tarifs <- setdiff(available_tarifs(), input$tarif_to_remove)
+    available_tarifs(updated_tarifs)
+    
+    # Supprimer le tarif des données combinées
+    combined <- combined_data() %>%
+      filter(`Tarif.attribué` != input$tarif_to_remove)
+    combined_data(combined)
+    
+    # Supprimer le tarif des groupes existants
+    updated_groups <- tarif_groups() %>%
+      purrr::map(function(group) {
+        group$tarifs <- setdiff(group$tarifs, input$tarif_to_remove)
+        group
+      }) %>%
+      purrr::discard(~length(.x$tarifs) == 0) # Supprimer les groupes vides
+    tarif_groups(updated_groups)
+  })
+  
   # Aperçu des regroupements
   output$preview_tarifs <- renderTable({
     req(tarif_groups())
     
-    # Créer un tableau qui affiche les groupes et les tarifs associés
     tarif_groups() %>%
-      purrr::map_df(~data.frame(Groupe = .x$group_name, Tarifs = paste(.x$tarifs, collapse = ",  ")))
+      purrr::map_df(~data.frame(Groupe = .x$group_name, Tarifs = paste(.x$tarifs, collapse = ", ")))
   })
   
-  # Appliquer les regroupements de tarifs
+  
+  # Fonction pour attribuer les groupes aux données combinées
+  map_groups_to_combined <- function(combined, groups) {
+    combined %>%
+      rowwise() %>%
+      mutate(
+        Groupe = {
+          matching_groups <- purrr::keep(groups, ~ `Tarif.attribué` %in% .x$tarifs)
+          if (length(matching_groups) > 0) matching_groups[[1]]$group_name else NA
+        }
+      )
+  }
+  
+  # Appliquer les groupes de tarifs aux données combinées
   observeEvent(input$apply_tarif_settings, {
     req(combined_data(), tarif_groups())
     
-    grouped <- combined_data()
-    for (group in tarif_groups()) {
-      grouped <- grouped %>%
-        mutate(`Tarif.attribué` = ifelse(`Tarif.attribué` %in% group$tarifs, group$group_name, `Tarif.attribué`))
-    }
+    groups <- tarif_groups()
+    combined <- combined_data()
     
-    grouped_tarifs(grouped)
+    # Mapper les groupes sur les données combinées
+    combined <- map_groups_to_combined(combined, groups)
+    
+    combined_data(combined) # Mettre à jour les données combinées avec les groupes
   })
+  
+  
+  
+  
+  # Appliquer les regroupements de tarifs
+  # observeEvent(input$apply_tarif_settings, {
+  #   req(combined_data(), tarif_groups())
+  #   
+  #   grouped <- combined_data()
+  #   for (group in tarif_groups()) {
+  #     grouped <- grouped %>%
+  #       mutate(`Tarif.attribué` = ifelse(`Tarif.attribué` %in% group$tarifs, group$group_name, `Tarif.attribué`))
+  #   }
+  #   
+  #   grouped_tarifs(grouped)
+  # })
   
   # Aperçu des données combinées
   output$preview_reservations <- renderTable({
@@ -143,6 +212,133 @@ server <- function(input, output, session) {
   
   output$preview_combined <- renderTable({
     req(combined_data())
-    head(combined_data())
+    head(combined_data(),30)
+  })
+  
+
+  
+  
+  
+  # transformed_data <- reactive({
+  #   req(combined_data())
+  #   combined_data() %>%
+  #     mutate(Date = as.Date(Date, format = "%d/%m/%Y"),
+  #            Jour = weekdays(Date))
+  # })
+  
+  
+  transformed_data <- reactive({
+    req(combined_data())
+    combined_data() %>%
+      mutate(
+        Date = as.Date(Date, format = "%d/%m/%Y"),
+        Jour = weekdays(Date)
+      ) %>%
+      filter(!is.na(Groupe)) # Garder uniquement les lignes avec des groupes valides
+  })
+  
+  
+  # 1. Nb de réservation tot
+  output$plot_total <- renderPlotly({
+    req(transformed_data())
+    data <- transformed_data()
+    plot_ly(data, x = ~Date, type = 'histogram', name = "Réservations Totales") %>%
+      layout(
+        title = input$title_total,
+        xaxis = list(title = "Date"),
+        yaxis = list(title = "Nombre de Réservations"),
+        showlegend = TRUE
+      )
+  })
+  
+  # 2. Nb de réservation tot H et F
+  output$plot_total_hf <- renderPlotly({
+    req(transformed_data())
+    data <- transformed_data()
+    plot_ly(data, x = ~Sexe, type = 'histogram', name = "Réservations par Sexe") %>%
+      layout(
+        title = input$title_total_hf,
+        xaxis = list(title = "Sexe"),
+        yaxis = list(title = "Nombre de Réservations"),
+        showlegend = TRUE
+      )
+  })
+  
+  # 3. Nb de réservation par catégorie
+  output$plot_par_categorie <- renderPlotly({
+    req(transformed_data())
+    data <- transformed_data()
+    plot_ly(data, x = ~Groupe, type = 'histogram', name = "Réservations par Catégorie") %>%
+      layout(
+        title = input$title_par_categorie,
+        xaxis = list(title = "Catégorie"),
+        yaxis = list(title = "Nombre de Réservations"),
+        showlegend = TRUE
+      )
+  })
+  
+  # 4. Nb de réservation par catégorie H et F
+  output$plot_par_categorie_hf <- renderPlotly({
+    req(transformed_data())
+    data <- transformed_data()
+    plot_ly(data, x = ~Groupe, color = ~Sexe, type = 'histogram', barmode = 'stack') %>%
+      layout(
+        title = input$title_par_categorie_hf,
+        xaxis = list(title = "Catégorie"),
+        yaxis = list(title = "Nombre de Réservations"),
+        showlegend = TRUE
+      )
+  })
+  
+  # 5. Nb de réservation par heures
+  output$plot_par_heures <- renderPlotly({
+    req(transformed_data())
+    data <- transformed_data()
+    plot_ly(data, x = ~Horaires, type = 'histogram', name = "Réservations par Heures") %>%
+      layout(
+        title = input$title_par_heures,
+        xaxis = list(title = "Heures"),
+        yaxis = list(title = "Nombre de Réservations"),
+        showlegend = TRUE
+      )
+  })
+  
+  # 6. Nb de réservation par heures et catégorie
+  output$plot_par_heures_categorie <- renderPlotly({
+    req(transformed_data())
+    data <- transformed_data()
+    plot_ly(data, x = ~Horaires, color = ~Groupe, type = 'histogram', barmode = 'stack') %>%
+      layout(
+        title = input$title_par_heures_categorie,
+        xaxis = list(title = "Heures"),
+        yaxis = list(title = "Nombre de Réservations"),
+        showlegend = TRUE
+      )
+  })
+  
+  # 7. Nb de réservation par jour
+  output$plot_par_jour <- renderPlotly({
+    req(transformed_data())
+    data <- transformed_data()
+    plot_ly(data, x = ~Jour, type = 'histogram', name = "Réservations par Jour") %>%
+      layout(
+        title = input$title_par_jour,
+        xaxis = list(title = "Jour"),
+        yaxis = list(title = "Nombre de Réservations"),
+        showlegend = TRUE
+      )
+  })
+  
+  # 8. Nb de réservation par jour et catégorie
+  output$plot_par_jour_categorie <- renderPlotly({
+    req(transformed_data())
+    data <- transformed_data()
+    plot_ly(data, x = ~Jour, color = ~Groupe, type = 'histogram', barmode = 'stack') %>%
+      layout(
+        title = input$title_par_jour_categorie,
+        xaxis = list(title = "Jour"),
+        yaxis = list(title = "Nombre de Réservations"),
+        showlegend = TRUE
+      )
   })
 }
