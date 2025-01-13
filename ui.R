@@ -10,7 +10,7 @@ library(shiny)
 library(shinydashboard)
 library(plotly)
 
-ui <- dashboardPage(
+ui <- dashboardPage(skin="yellow",
   dashboardHeader(title = "Analyse Tennis"),
   
   dashboardSidebar(
@@ -18,14 +18,14 @@ ui <- dashboardPage(
       menuItem("Chargement des fichiers", tabName = "upload", icon = icon("file-upload")),
       menuItem("Gestion des Tarifs", tabName = "tarifs", icon = icon("tags")),
       menuItem("Analyses", tabName = "analyses", icon = icon("chart-bar"),
-               menuSubItem("Nb de réservation tot", tabName = "total"),
-               menuSubItem("Nb de réservation tot H et F", tabName = "total_hf"),
+               menuSubItem("Nb de réservation total", tabName = "total"),
+               menuSubItem(HTML("Nb de réservation<br>total par genre"), tabName = "total_hf"),
                menuSubItem("Nb de réservation par catégorie", tabName = "par_categorie"),
-               menuSubItem("Nb de réservation par catégorie H et F", tabName = "par_categorie_hf"),
+               menuSubItem(HTML("Nb de réservation<br>par catégorie et par genre"), tabName = "par_categorie_hf"),
                menuSubItem("Nb de réservation par heures", tabName = "par_heures"),
-               menuSubItem("Nb de réservation par heures et catégorie", tabName = "par_heures_categorie"),
+               menuSubItem(HTML("Nb de réservation<br>par heures et catégorie"), tabName = "par_heures_categorie"),
                menuSubItem("Nb de réservation par jour", tabName = "par_jour"),
-               menuSubItem("Nb de réservation par jour et catégorie", tabName = "par_jour_categorie")
+               menuSubItem(HTML("Nb de réservation<br>par jour et catégorie"), tabName = "par_jour_categorie")
       )
     )
   ),
@@ -96,14 +96,14 @@ ui <- dashboardPage(
       tabItem(tabName = "total",
               fluidRow(
                 box(title = "Graphique des Réservations Totales", width = 12,
-                    textInput("title_total", "Titre du graphique :", "Réservations Totales"),
+                    textInput("title_total", "Titre du graphique :", "Réservations Totales par semaine"),
                     plotlyOutput("plot_total"))
               )
       ),
       tabItem(tabName = "total_hf",
               fluidRow(
-                box(title = "Graphique des Réservations Totales H et F", width = 12,
-                    textInput("title_total_hf", "Titre du graphique :", "Réservations Totales H et F"),
+                box(title = "Réservations Totales par Genre", width = 12,
+                    textInput("title_total_hf", "Titre du graphique :", "Réservations Totales par Genre"),
                     plotlyOutput("plot_total_hf"))
               )
       ),
@@ -116,8 +116,8 @@ ui <- dashboardPage(
       ),
       tabItem(tabName = "par_categorie_hf",
               fluidRow(
-                box(title = "Graphique par Catégorie H et F", width = 12,
-                    textInput("title_par_categorie_hf", "Titre du graphique :", "Réservations par Catégorie H et F"),
+                box(title = "Réservations par Catégorie et par Genre", width = 12,
+                    textInput("title_par_categorie_hf", "Titre du graphique :", "Réservations par Catégorie et par Genre"),
                     plotlyOutput("plot_par_categorie_hf"))
               )
       ),
@@ -130,8 +130,8 @@ ui <- dashboardPage(
       ),
       tabItem(tabName = "par_heures_categorie",
               fluidRow(
-                box(title = "Graphique par Heures et Catégorie", width = 12,
-                    textInput("title_par_heures_categorie", "Titre du graphique :", "Réservations par Heures et Catégorie"),
+                box(title = "Graphique par Heures et par Catégorie", width = 12,
+                    textInput("title_par_heures_categorie", "Titre du graphique :", "Réservations par Heures et par Catégorie"),
                     plotlyOutput("plot_par_heures_categorie"))
               )
       ),
@@ -144,8 +144,8 @@ ui <- dashboardPage(
       ),
       tabItem(tabName = "par_jour_categorie",
               fluidRow(
-                box(title = "Graphique par Jour et Catégorie", width = 12,
-                    textInput("title_par_jour_categorie", "Titre du graphique :", "Réservations par Jour et Catégorie"),
+                box(title = "Graphique par Jour et par Catégorie", width = 12,
+                    textInput("title_par_jour_categorie", "Titre du graphique :", "Réservations par Jour et par Catégorie"),
                     plotlyOutput("plot_par_jour_categorie"))
               )
       )

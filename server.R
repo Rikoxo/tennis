@@ -154,7 +154,7 @@ server <- function(input, output, session) {
     req(tarif_groups())
     
     tarif_groups() %>%
-      purrr::map_df(~data.frame(Groupe = .x$group_name, Tarifs = paste(.x$tarifs, collapse = ", ")))
+      purrr::map_df(~data.frame(Groupe = .x$group_name, Tarifs = paste(.x$tarifs, collapse = " , ")))
   })
   
   
@@ -239,6 +239,7 @@ server <- function(input, output, session) {
   
   
   # 1. Nb de réservation tot
+  
   output$plot_total <- renderPlotly({
     req(transformed_data())
     data <- transformed_data()
@@ -251,14 +252,37 @@ server <- function(input, output, session) {
       )
   })
   
+  
+  # output$plot_total <- renderPlotly({
+  #   req(transformed_data())
+  #   data <- transformed_data()
+  #   
+  #   # Récupérer la période
+  #   date_min <- min(data$Date, na.rm = TRUE)
+  #   date_max <- max(data$Date, na.rm = TRUE)
+  #   
+  #   # Générer le titre avec la période
+  #   title_with_period <- paste("Réservations Totales du", format(date_min, "%d/%m/%Y"), 
+  #                              "au", format(date_max, "%d/%m/%Y"))
+  #   
+  #   # Créer le graphique
+  #   plot_ly(data, x = ~Date, type = 'histogram', name = "Réservations Totales") %>%
+  #     layout(
+  #       title = title_with_period,
+  #       xaxis = list(title = "Date"),
+  #       yaxis = list(title = "Nombre de Réservations"),
+  #       showlegend = TRUE
+  #     )
+  # })
+  
   # 2. Nb de réservation tot H et F
   output$plot_total_hf <- renderPlotly({
     req(transformed_data())
     data <- transformed_data()
-    plot_ly(data, x = ~Sexe, type = 'histogram', name = "Réservations par Sexe") %>%
+    plot_ly(data, x = ~Sexe, type = 'histogram', color = ~Sexe) %>%
       layout(
         title = input$title_total_hf,
-        xaxis = list(title = "Sexe"),
+        xaxis = list(title = "Genre"),
         yaxis = list(title = "Nombre de Réservations"),
         showlegend = TRUE
       )
@@ -268,7 +292,7 @@ server <- function(input, output, session) {
   output$plot_par_categorie <- renderPlotly({
     req(transformed_data())
     data <- transformed_data()
-    plot_ly(data, x = ~Groupe, type = 'histogram', name = "Réservations par Catégorie") %>%
+    plot_ly(data, x = ~Groupe, type = 'histogram', color = ~Groupe) %>%
       layout(
         title = input$title_par_categorie,
         xaxis = list(title = "Catégorie"),
@@ -281,7 +305,7 @@ server <- function(input, output, session) {
   output$plot_par_categorie_hf <- renderPlotly({
     req(transformed_data())
     data <- transformed_data()
-    plot_ly(data, x = ~Groupe, color = ~Sexe, type = 'histogram', barmode = 'stack') %>%
+    plot_ly(data, x = ~Groupe, color = ~Sexe, type = 'histogram') %>%
       layout(
         title = input$title_par_categorie_hf,
         xaxis = list(title = "Catégorie"),
@@ -294,7 +318,7 @@ server <- function(input, output, session) {
   output$plot_par_heures <- renderPlotly({
     req(transformed_data())
     data <- transformed_data()
-    plot_ly(data, x = ~Horaires, type = 'histogram', name = "Réservations par Heures") %>%
+    plot_ly(data, x = ~Horaires, type = 'histogram',name="Réservations par Heures") %>%
       layout(
         title = input$title_par_heures,
         xaxis = list(title = "Heures"),
@@ -307,7 +331,7 @@ server <- function(input, output, session) {
   output$plot_par_heures_categorie <- renderPlotly({
     req(transformed_data())
     data <- transformed_data()
-    plot_ly(data, x = ~Horaires, color = ~Groupe, type = 'histogram', barmode = 'stack') %>%
+    plot_ly(data, x = ~Horaires, color = ~Groupe, type = 'histogram') %>%
       layout(
         title = input$title_par_heures_categorie,
         xaxis = list(title = "Heures"),
@@ -317,10 +341,32 @@ server <- function(input, output, session) {
   })
   
   # 7. Nb de réservation par jour
+  # output$plot_par_jour <- renderPlotly({
+  #   req(transformed_data())
+  #   data <- transformed_data()
+  #   plot_ly(data, x = ~Jour, type = 'histogram', name = "Réservations par Jour") %>%
+  #     layout(
+  #       title = input$title_par_jour,
+  #       xaxis = list(title = "Jour"),
+  #       yaxis = list(title = "Nombre de Réservations"),
+  #       showlegend = TRUE
+  #     )
+  # })
+  
   output$plot_par_jour <- renderPlotly({
     req(transformed_data())
+    
     data <- transformed_data()
-    plot_ly(data, x = ~Jour, type = 'histogram', name = "Réservations par Jour") %>%
+    
+    # Définir l'ordre des jours de la semaine
+    days_order <- c("lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi", "dimanche")
+    
+    # Convertir la colonne Jour en facteur avec un ordre spécifique
+    data <- data %>%
+      mutate(Jour = factor(Jour, levels = days_order))
+    
+    # Créer l'histogramme avec les jours dans l'ordre
+    plot_ly(data, x = ~Jour, type = 'histogram',name = "Réservations par Jour") %>%
       layout(
         title = input$title_par_jour,
         xaxis = list(title = "Jour"),
@@ -329,11 +375,19 @@ server <- function(input, output, session) {
       )
   })
   
+  
   # 8. Nb de réservation par jour et catégorie
   output$plot_par_jour_categorie <- renderPlotly({
     req(transformed_data())
     data <- transformed_data()
-    plot_ly(data, x = ~Jour, color = ~Groupe, type = 'histogram', barmode = 'stack') %>%
+    
+    # Définir l'ordre des jours de la semaine
+    days_order <- c("lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi", "dimanche")
+    
+    data <- data %>%
+      mutate(Jour = factor(Jour, levels = days_order))
+    
+    plot_ly(data, x = ~Jour, color = ~Groupe, type = 'histogram') %>%
       layout(
         title = input$title_par_jour_categorie,
         xaxis = list(title = "Jour"),
