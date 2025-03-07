@@ -23,9 +23,9 @@ ui <- dashboardPage(skin="yellow",
                menuSubItem("Nb de réservation par catégorie", tabName = "par_categorie"),
                menuSubItem(HTML("Nb de réservation<br>par catégorie et par genre"), tabName = "par_categorie_hf"),
                menuSubItem("Nb de réservation par heures", tabName = "par_heures"),
-               menuSubItem(HTML("Nb de réservation<br>par heures et catégorie"), tabName = "par_heures_categorie"),
+               menuSubItem(HTML("Nb de réservation<br>par heures et par catégorie"), tabName = "par_heures_categorie"),
                menuSubItem("Nb de réservation par jour", tabName = "par_jour"),
-               menuSubItem(HTML("Nb de réservation<br>par jour et catégorie"), tabName = "par_jour_categorie")
+               menuSubItem(HTML("Nb de réservation<br>par jour et par catégorie"), tabName = "par_jour_categorie")
       )
     )
   ),
