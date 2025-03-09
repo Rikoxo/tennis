@@ -210,10 +210,10 @@ server <- function(input, output, session) {
     head(inscrits_data())
   })
   
-  output$preview_combined <- renderTable({
-    req(combined_data())
-    head(combined_data(),30)
-  })
+  # output$preview_combined <- renderTable({
+  #   req(combined_data())
+  #   head(combined_data(),30)
+  # })
   
 
   
@@ -226,16 +226,31 @@ server <- function(input, output, session) {
   #            Jour = weekdays(Date))
   # })
   
+
+  
   
   transformed_data <- reactive({
     req(combined_data())
-    combined_data() %>%
+    combined_data() %>% 
       mutate(
         Date = as.Date(Date, format = "%d/%m/%Y"),
         Jour = weekdays(Date)
-      ) %>%
-      filter(!is.na(Groupe)) # Garder uniquement les lignes avec des groupes valides
+      ) %>% 
+      filter(!is.na(Groupe)) %>% distinct(Date, Horaires, joueurs, .keep_all = TRUE) # Garder uniquement les lignes avec des groupes valides
   })
+  
+  output$preview_combined <- renderTable({
+    req(transformed_data())
+    head(transformed_data(),30)
+  })
+  
+  #   transformed_data <- reactive({ # filtered_data
+  #   #req(filtered_data(), input$selected_categories)
+  #   
+  #     filtered_data() %>%
+  #     filter(Groupe %in% input$selected_categories) %>%
+  #     distinct(Date, Horaires, joueurs, .keep_all = TRUE)  # Suppression des doublons après filtrage
+  # })
   
   
   # 1. Nb de réservation tot
@@ -290,13 +305,17 @@ server <- function(input, output, session) {
     data <- transformed_data() %>%
       count(Sexe)  # Compter le nombre de réservations par genre
     
+    couleurs_sexe <- c("Femme" = "pink", "Homme" = "skyblue")
+      
+    
     plot_ly(
       data, 
       x = ~Sexe, 
       y = ~n, 
       type = 'bar', 
       color = ~Sexe,
-      marker = list(color = c("pink", "skyblue")),  # Bleu pour H, Rose pour F
+      colors = couleurs_sexe,
+      #marker = list(color = c("pink", "skyblue")),  # Bleu pour H, Rose pour F
       text = ~n, 
       textposition = 'auto',
       textfont = list(size = 14, color = "black")  # Texte plus grand et noir
@@ -337,12 +356,19 @@ server <- function(input, output, session) {
   
   output$plot_par_categorie_hf <- renderPlotly({
     req(transformed_data())
-    data <- transformed_data() %>%
-      count(Groupe, Sexe) # Comptage par catégorie et sexe
     
-    plot_ly(data, x = ~Groupe, 
+    # Comptage par catégorie et sexe
+    data <- transformed_data() %>%
+      count(Groupe, Sexe)
+    
+    # Définition des couleurs (rose pour Femme, bleu pour Homme)
+    couleurs_sexe <- c("Femme" = "pink", "Homme" = "skyblue")
+
+        plot_ly(data, 
+            x = ~Groupe, 
             y = ~n, 
             color = ~Sexe, 
+            colors = couleurs_sexe,  # Appliquer les couleurs
             type = 'bar', 
             text = ~n,  
             textposition = 'auto', 
@@ -354,6 +380,7 @@ server <- function(input, output, session) {
         showlegend = TRUE
       )
   })
+  
   
   
   # 5. Nb de réservation par heures
@@ -479,7 +506,15 @@ server <- function(input, output, session) {
       mutate(Jour = factor(Jour, levels = days_order)) %>%
       count(Jour) # Comptage par jour
     
-    plot_ly(data, x = ~Jour, y = ~n, type = 'bar', text = ~n, textposition = 'auto') %>%
+    plot_ly(data, 
+            x = ~Jour, 
+            y = ~n,
+            type = 'bar', 
+            text = ~n, 
+            
+            marker = list(color = rainbow(7)), #lightblue
+            textposition = 'auto',
+            textfont = list(size = 14, color = "black")) %>%
       layout(
         title = input$title_par_jour,
         xaxis = list(title = "Jour"),
@@ -511,5 +546,191 @@ server <- function(input, output, session) {
         showlegend = TRUE
       )
   })
+
   
-}
+  # 9. Nb de réservations par jour selon le genre
+  output$plot_par_jour_sexe <- renderPlotly({
+    req(transformed_data())
+    
+    data <- transformed_data() %>%
+      count(Jour, Sexe)
+    
+    # Définition des couleurs (rose pour Femme, bleu pour Homme)
+    couleurs_sexe <- c("Femme" = "pink", "Homme" = "skyblue")
+    
+    # Définir l'ordre des jours de la semaine
+    days_order <- c("lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi", "dimanche")
+    
+    data <- data %>%
+      mutate(Jour = factor(Jour, levels = days_order))
+    
+    plot_ly(data, 
+            x = ~Jour, 
+            y = ~n, 
+            color = ~Sexe, 
+            colors = couleurs_sexe, 
+            type = 'bar', 
+            text = ~n,  
+            textposition = 'auto', 
+            textfont = list(size = 14, color = "black")) %>%
+      layout(
+        title = input$title_par_jour_genre,
+        xaxis = list(title = "Jour"),
+        yaxis = list(title = "Nombre de Réservations"),
+        showlegend = TRUE
+      )
+  })
+  
+  # 10. Nb de réservations par heure selon le genre
+  output$plot_par_heures_sexe <- renderPlotly({
+    req(transformed_data())
+    
+    data <- transformed_data() %>%
+      count(Horaires, Sexe)
+    
+    # Définition des couleurs (rose pour Femme, bleu pour Homme)
+    couleurs_sexe <- c("Femme" = "pink", "Homme" = "skyblue")
+    
+    plot_ly(data, 
+            x = ~Horaires, 
+            y = ~n, 
+            color = ~Sexe, 
+            colors = couleurs_sexe, 
+            type = 'bar', 
+            text = ~n,  
+            textposition = 'auto', 
+            textfont = list(size = 14, color = "black")) %>%
+      layout(
+        title = input$title_par_heure_genre,
+        xaxis = list(title = "Heures"),
+        yaxis = list(title = "Nombre de Réservations"),
+        showlegend = TRUE
+      )
+  })
+  
+
+
+  # 11. Nb de personnes par catégorie 
+  
+  output$plot_personnes_par_categorie <- renderPlotly({
+    req(transformed_data())
+    
+    data <- transformed_data() %>%
+      distinct(joueurs, Groupe, .keep_all = TRUE) %>%  # Garder une seule occurrence par joueur
+      count(Groupe)  # Compter le nombre de personnes uniques par catégorie
+    
+    plot_ly(data, 
+            x = ~Groupe, 
+            y = ~n, 
+            type = 'bar', 
+            color = ~Groupe,
+            text = ~n,  
+            textposition = 'auto', 
+            textfont = list(size = 14, color = "black")) %>%
+      layout(
+        title = input$title_par_nb_groupe,
+        xaxis = list(title = "Catégorie"),
+        yaxis = list(title = "Nombre de Personnes"),
+        showlegend = TRUE
+      )
+  })
+  
+  # 12. Nb de personnes par catégorie selon le genre
+  
+  output$plot_personnes_par_categorie_par_genre <- renderPlotly({
+    req(transformed_data())
+    
+    data <- transformed_data() %>%
+      distinct(joueurs, Groupe, .keep_all = TRUE) %>%  # Garder une seule occurrence par joueur
+      count(Groupe, Sexe)  # Compter le nombre de personnes uniques par catégorie
+    
+    couleurs_sexe <- c("Femme" = "pink", "Homme" = "skyblue")
+    
+    
+    plot_ly(data, 
+            x = ~Groupe, 
+            y = ~n, 
+            type = 'bar', 
+            color = ~Sexe, 
+            colors = couleurs_sexe, 
+            text = ~n,  
+            textposition = 'auto', 
+            textfont = list(size = 14, color = "black")) %>%
+      layout(
+        title = input$title_par_nb_groupe_genre,
+        xaxis = list(title = "Catégorie"),
+        yaxis = list(title = "Nombre de Personnes"),
+        showlegend = TRUE
+      )
+  })  
+
+  # 13. Classement de joueurs ayant plus réservé
+  
+  output$table_top_joueurs <- renderDataTable({
+    req(transformed_data())
+    
+    data <- transformed_data()  %>% 
+      count(joueurs,Groupe, sort = TRUE) # Compter le nombre de parties par joueur 
+    
+    colnames(data) <- c("Joueurs","Catégorie", "Nombre")
+    
+    DT::datatable(data, options = list(pageLength = 20, autoWidth = TRUE))
+  })  
+  
+  
+  # output$plot_horaires_par_jour <- renderPlotly({
+  #   req(transformed_data())
+  #   
+  #   data <- transformed_data() %>%
+  #     count(Jour, Horaires)  # Compter le nombre d'occurrences par jour et horaire
+  #   
+  #   plot_ly(data, 
+  #           x = ~Horaires, 
+  #           y = ~n, 
+  #           color = ~Jour,  # Un graphique par jour
+  #           type = 'bar',
+  #           text = ~n,  
+  #           textposition = 'auto', 
+  #           textfont = list(size = 14, color = "black")) %>%
+  #     layout(
+  #       title = input$title_par_jour_horaire,
+  #       xaxis = list(title = "Horaires", tickangle = -45),
+  #       yaxis = list(title = "Nombre de Réservations"),
+  #       barmode = "group",  # Affiche les jours en groupe
+  #       showlegend = TRUE
+  #     )
+  # })
+  
+  
+  output$plot_horaires_par_jour <- renderPlotly({
+    req(transformed_data())
+    
+    data <- transformed_data() %>%
+      count(Jour, Horaires)  # Compter le nombre d'occurrences par jour et horaire
+    
+    jours_ordre <- c("lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi", "dimanche")
+    
+    plots <- lapply(jours_ordre, function(jour) {
+      data_jour <- data %>% filter(Jour == jour)
+      
+      plot_ly(data_jour, 
+              x = ~Horaires, 
+              y = ~n, 
+              type = 'bar', 
+              name = jour,
+              marker = list(color = 'lightblue')) %>% 
+        layout(
+          title = paste("Réservations du", jour),
+          xaxis = list(title = "Horaires", tickangle = -45),
+          yaxis = list(title = "Nombre de Réservations"),
+          showlegend = FALSE
+        )
+    })
+    
+    subplot(plots, nrows = 7, shareX = TRUE, shareY = TRUE, titleX = TRUE, titleY = TRUE) %>%
+      layout(margin = list(b = 100, t = 50), grid = list(rows = 7, columns = 1, pattern = "independent", roworder = "top to bottom", ygap = 0.2))  })
+  
+  
+  
+    
+} # Crochet de FIN

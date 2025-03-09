@@ -25,7 +25,13 @@ ui <- dashboardPage(skin="yellow",
                menuSubItem("Nb de réservation par heures", tabName = "par_heures"),
                menuSubItem(HTML("Nb de réservation<br>par heures et par catégorie"), tabName = "par_heures_categorie"),
                menuSubItem("Nb de réservation par jour", tabName = "par_jour"),
-               menuSubItem(HTML("Nb de réservation<br>par jour et par catégorie"), tabName = "par_jour_categorie")
+               menuSubItem(HTML("Nb de réservation<br>par jour et par catégorie"), tabName = "par_jour_categorie"),
+               menuSubItem(HTML("Nb de réservation<br>par jour et par genre"), tabName = "par_jour_genre"),
+               menuSubItem(HTML("Nb de réservation<br>par jour et par heure"), tabName = "par_heure_genre"),
+               menuSubItem(HTML("Personnes par catégorie"), tabName = "nb_groupe"),
+               menuSubItem(HTML("Personnes par catégorie<br>et par genre"), tabName = "nb_groupe_genre"),
+               menuSubItem(HTML("Classement"), tabName = "classement"),
+               menuSubItem(HTML("Jour et horaires"), tabName = "jour_horaire")
       )
     )
   ),
@@ -148,7 +154,47 @@ ui <- dashboardPage(skin="yellow",
                     textInput("title_par_jour_categorie", "Titre du graphique :", "Réservations par Jour et par Catégorie"),
                     plotlyOutput("plot_par_jour_categorie"))
               )
+      ),
+      tabItem(tabName = "par_jour_genre",
+                    fluidRow(
+                      box(title = "Graphique par Jour et par Genre", width = 12,
+                          textInput("title_par_jour_genre", "Titre du graphique :", "Réservations par Jour et par Genre"),
+                          plotlyOutput("plot_par_jour_sexe"))
+                    )
+            ),
+      tabItem(tabName = "par_heure_genre",
+              fluidRow(
+                box(title = "Graphique par Heure et par Genre", width = 12,
+                    textInput("title_par_heure_genre", "Titre du graphique :", "Réservations par Heure et par Genre"),
+                    plotlyOutput("plot_par_heures_sexe"))
+              )
+      ),
+      tabItem(tabName = "nb_groupe",
+              fluidRow(
+                box(title = "Graphique du nombre de personnes par groupe", width = 12,
+                    textInput("title_par_nb_groupe", "Titre du graphique :", "Nombre de personnes par catégorie"),
+                    plotlyOutput("plot_personnes_par_categorie"))
+              )
+      ),
+      tabItem(tabName = "nb_groupe_genre",
+              fluidRow(
+                box(title = "Graphique du nombre de personnes par groupe et par genre", width = 12,
+                    textInput("title_par_nb_groupe_genre", "Titre du graphique :", "Nombre de personnes par catégorie et par genre"),
+                    plotlyOutput("plot_personnes_par_categorie_par_genre"))
+              )
+      ),
+      tabItem(tabName = "classement",
+              dataTableOutput("table_top_joueurs")   
+      ),
+      tabItem(tabName = "jour_horaire",
+              fluidRow(
+                box(title = "Graphique du nombre de personnes par groupe et par genre", width = 12,
+                    textInput("title_par_jour_horaire", "Titre du graphique :", "jour et horaire"),
+                    plotlyOutput("plot_horaires_par_jour"))
+              )
       )
-    )
+      
+      )
+    ) #dashbody
   )
-)
+
