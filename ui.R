@@ -30,13 +30,24 @@ ui <- dashboardPage(skin="yellow",
                menuSubItem(HTML("Nb de réservation<br>par jour et par heure"), tabName = "par_heure_genre"),
                menuSubItem(HTML("Personnes par catégorie"), tabName = "nb_groupe"),
                menuSubItem(HTML("Personnes par catégorie<br>et par genre"), tabName = "nb_groupe_genre"),
-               menuSubItem(HTML("Classement"), tabName = "classement"),
-               menuSubItem(HTML("Jour et horaires"), tabName = "jour_horaire")
-      )
+               menuSubItem(HTML("Jour et horaires"), tabName = "jour_horaire"),
+               menuSubItem(HTML("Jour et horaires par catégorie"), tabName = "jour_horaire_categorie"),
+               menuSubItem(HTML("Jour et horaires par genre"), tabName = "jour_horaire_genre")
+               #menuSubItem(HTML("Classement"), tabName = "classement")
+              ),
+      menuItem(HTML("Classement"), tabName = "classement", icon = icon("ranking-star"))
     )
   ),
   
   dashboardBody(
+    
+    tags$head(
+      tags$style(HTML("
+        .plot-spacing {
+          margin-bottom: 20px
+        }
+      "))),
+    
     tabItems(
       # Onglet de chargement des fichiers
       tabItem(tabName = "upload",
@@ -188,12 +199,43 @@ ui <- dashboardPage(skin="yellow",
       ),
       tabItem(tabName = "jour_horaire",
               fluidRow(
-                box(title = "Graphique du nombre de personnes par groupe et par genre", width = 12,
-                    textInput("title_par_jour_horaire", "Titre du graphique :", "jour et horaire"),
-                    plotlyOutput("plot_horaires_par_jour"))
+                box(title = "Graphique des réservation par jour et par horaire", width = 12,
+                    plotlyOutput("plot_horaires_par_jour_lundi"), br(), br(), br(), br(), br(), 
+                    plotlyOutput("plot_horaires_par_jour_mardi"), br(), br(), br(), br(), br(), 
+                    plotlyOutput("plot_horaires_par_jour_mercredi"), br(), br(), br(), br(), br(), 
+                    plotlyOutput("plot_horaires_par_jour_jeudi"), br(), br(), br(), br(), br(), 
+                    plotlyOutput("plot_horaires_par_jour_vendredi"), br(), br(), br(), br(), br(), 
+                    plotlyOutput("plot_horaires_par_jour_samedi"), br(), br(), br(), br(), br(), 
+                    plotlyOutput("plot_horaires_par_jour_dimanche")
+                )
+              )
+          ),
+      tabItem(tabName = "jour_horaire_categorie",
+              fluidRow(
+                box(title = "Graphique des réservation par jour et par horaire par catégorie", width = 12,
+                    plotlyOutput("plot_horaires_par_jour_categorie_lundi"), br(), br(), br(), br(), br(), 
+                    plotlyOutput("plot_horaires_par_jour_categorie_mardi"), br(), br(), br(), br(), br(), 
+                    plotlyOutput("plot_horaires_par_jour_categorie_mercredi"), br(), br(), br(), br(), br(), 
+                    plotlyOutput("plot_horaires_par_jour_categorie_jeudi"), br(), br(), br(), br(), br(), 
+                    plotlyOutput("plot_horaires_par_jour_categorie_vendredi"), br(), br(), br(), br(), br(), 
+                    plotlyOutput("plot_horaires_par_jour_categorie_samedi"), br(), br(), br(), br(), br(), 
+                    plotlyOutput("plot_horaires_par_jour_categorie_dimanche")
+                )
+              )
+      ),
+      tabItem(tabName = "jour_horaire_genre",
+              fluidRow(
+                box(title = "Graphique des réservation par jour et par horaire par genre", width = 12,
+                    plotlyOutput("plot_horaires_par_jour_genre_lundi"), br(), br(), br(), br(), br(),
+                    plotlyOutput("plot_horaires_par_jour_genre_mardi"), br(), br(), br(), br(), br(),
+                    plotlyOutput("plot_horaires_par_jour_genre_mercredi"), br(), br(), br(), br(), br(),
+                    plotlyOutput("plot_horaires_par_jour_genre_jeudi"), br(), br(), br(), br(), br(),
+                    plotlyOutput("plot_horaires_par_jour_genre_vendredi"), br(), br(), br(), br(), br(),
+                    plotlyOutput("plot_horaires_par_jour_genre_samedi"), br(), br(), br(), br(), br(),
+                    plotlyOutput("plot_horaires_par_jour_genre_dimanche")
+                )
               )
       )
-      
       )
     ) #dashbody
   )

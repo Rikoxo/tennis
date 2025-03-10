@@ -215,18 +215,6 @@ server <- function(input, output, session) {
   #   head(combined_data(),30)
   # })
   
-
-  
-  
-  
-  # transformed_data <- reactive({
-  #   req(combined_data())
-  #   combined_data() %>%
-  #     mutate(Date = as.Date(Date, format = "%d/%m/%Y"),
-  #            Jour = weekdays(Date))
-  # })
-  
-
   
   
   transformed_data <- reactive({
@@ -243,15 +231,7 @@ server <- function(input, output, session) {
     req(transformed_data())
     head(transformed_data(),30)
   })
-  
-  #   transformed_data <- reactive({ # filtered_data
-  #   #req(filtered_data(), input$selected_categories)
-  #   
-  #     filtered_data() %>%
-  #     filter(Groupe %in% input$selected_categories) %>%
-  #     distinct(Date, Horaires, joueurs, .keep_all = TRUE)  # Suppression des doublons après filtrage
-  # })
-  
+
   
   # 1. Nb de réservation tot
   
@@ -549,6 +529,7 @@ server <- function(input, output, session) {
 
   
   # 9. Nb de réservations par jour selon le genre
+  
   output$plot_par_jour_sexe <- renderPlotly({
     req(transformed_data())
     
@@ -582,6 +563,7 @@ server <- function(input, output, session) {
   })
   
   # 10. Nb de réservations par heure selon le genre
+  
   output$plot_par_heures_sexe <- renderPlotly({
     req(transformed_data())
     
@@ -664,7 +646,496 @@ server <- function(input, output, session) {
       )
   })  
 
-  # 13. Classement de joueurs ayant plus réservé
+ 
+  
+  
+  # 13. Nb de réservation par jour et par horaire 
+  
+  output$plot_horaires_par_jour_lundi <- renderPlotly({
+    req(transformed_data())
+    
+    data_lundi <- transformed_data() %>%
+      filter(Jour == "lundi") %>%
+      count(Horaires)  # Compter le nombre de réservations par horaire
+    
+    plot_ly(data_lundi, 
+            x = ~Horaires, 
+            y = ~n, 
+            type = 'bar', 
+            #name = "Lundi",
+            marker = list(color = 'lightblue'),
+            text = ~n, textposition = 'outside') %>% 
+      layout(
+        title = "Lundi",
+        xaxis = list(title = "Horaires", tickangle = -45),
+        yaxis = list(title = "Nombre de Réservations"),
+        showlegend = FALSE
+      )
+  })
+  
+  output$plot_horaires_par_jour_mardi <- renderPlotly({
+    req(transformed_data())
+    
+    data_lundi <- transformed_data() %>%
+      filter(Jour == "mardi") %>%
+      count(Horaires)  # Compter le nombre de réservations par horaire
+    
+    plot_ly(data_lundi, 
+            x = ~Horaires, 
+            y = ~n, 
+            type = 'bar', 
+            name = "Mardi",
+            marker = list(color = 'lightblue'),
+            text = ~n, textposition = 'outside') %>% 
+      layout(
+        title = "Mardi",
+        xaxis = list(title = "Horaires", tickangle = -45),
+        yaxis = list(title = "Nombre de Réservations"),
+        showlegend = FALSE
+      )
+  })
+  
+  output$plot_horaires_par_jour_mercredi <- renderPlotly({
+    req(transformed_data())
+    
+    data_lundi <- transformed_data() %>%
+      filter(Jour == "mercredi") %>%
+      count(Horaires)  # Compter le nombre de réservations par horaire
+    
+    plot_ly(data_lundi, 
+            x = ~Horaires, 
+            y = ~n, 
+            type = 'bar', 
+            name = "Mercredi",
+            marker = list(color = 'lightblue'),
+            text = ~n, textposition = 'outside') %>% 
+      layout(
+        title = "Mercredi",
+        xaxis = list(title = "Horaires", tickangle = -45),
+        yaxis = list(title = "Nombre de Réservations"),
+        showlegend = FALSE
+      )
+  })
+  
+  output$plot_horaires_par_jour_jeudi <- renderPlotly({
+    req(transformed_data())
+    
+    data_lundi <- transformed_data() %>%
+      filter(Jour == "jeudi") %>%
+      count(Horaires)  # Compter le nombre de réservations par horaire
+    
+    plot_ly(data_lundi, 
+            x = ~Horaires, 
+            y = ~n, 
+            type = 'bar', 
+            name = "Jeudi",
+            marker = list(color = 'lightblue'),
+            text = ~n, textposition = 'outside') %>% 
+      layout(
+        title = "Jeudi",
+        xaxis = list(title = "Horaires", tickangle = -45),
+        yaxis = list(title = "Nombre de Réservations"),
+        showlegend = FALSE
+      )
+  })
+  
+  output$plot_horaires_par_jour_vendredi <- renderPlotly({
+    req(transformed_data())
+    
+    data_lundi <- transformed_data() %>%
+      filter(Jour == "vendredi") %>%
+      count(Horaires)  # Compter le nombre de réservations par horaire
+    
+    plot_ly(data_lundi, 
+            x = ~Horaires, 
+            y = ~n, 
+            type = 'bar', 
+            name = "Vendredi",
+            marker = list(color = 'lightblue'),
+            text = ~n, textposition = 'outside') %>% 
+      layout(
+        title = "Vendredi",
+        xaxis = list(title = "Horaires", tickangle = -45),
+        yaxis = list(title = "Nombre de Réservations"),
+        showlegend = FALSE
+      )
+  })
+  
+  output$plot_horaires_par_jour_samedi <- renderPlotly({
+    req(transformed_data())
+    
+    data_lundi <- transformed_data() %>%
+      filter(Jour == "samedi") %>%
+      count(Horaires)  # Compter le nombre de réservations par horaire
+    
+    plot_ly(data_lundi, 
+            x = ~Horaires, 
+            y = ~n, 
+            type = 'bar', 
+            name = "Samedi",
+            marker = list(color = 'lightblue'),
+            text = ~n, textposition = 'outside') %>% 
+      layout(
+        title = "Samedi",
+        xaxis = list(title = "Horaires", tickangle = -45),
+        yaxis = list(title = "Nombre de Réservations"),
+        showlegend = FALSE
+      )
+  })
+  
+  output$plot_horaires_par_jour_dimanche <- renderPlotly({
+    req(transformed_data())
+    
+    data_lundi <- transformed_data() %>%
+      filter(Jour == "dimanche") %>%
+      count(Horaires)  # Compter le nombre de réservations par horaire
+    
+    plot_ly(data_lundi, 
+            x = ~Horaires, 
+            y = ~n, 
+            type = 'bar', 
+            name = "Dimanche",
+            marker = list(color = 'lightblue'),
+            text = ~n, textposition = 'outside') %>% 
+      layout(
+        title =  "Dimanche",
+        xaxis = list(title = "Horaires", tickangle = -45),
+        yaxis = list(title = "Nombre de Réservations"),
+        showlegend = FALSE
+      )
+  })
+  
+  
+  
+  # 14. Nb de réservation par jour et par horaire et par catégorie
+  
+  
+  
+  output$plot_horaires_par_jour_categorie_lundi <- renderPlotly({
+    req(transformed_data())
+    
+    data_lundi <- transformed_data() %>%
+      filter(Jour == "lundi") %>%
+      count(Horaires,Groupe)  # Compter le nombre de réservations par horaire
+    
+    plot_ly(data_lundi, 
+            x = ~Horaires, 
+            y = ~n, 
+            color = ~Groupe,
+            type = 'bar', 
+            text = ~n, textposition = 'outside') %>% 
+      layout(
+        title = "Lundi",
+        xaxis = list(title = "Horaires", tickangle = -45),
+        yaxis = list(title = "Nombre de Réservations"),
+        showlegend = TRUE
+      )
+  })
+  
+  output$plot_horaires_par_jour_categorie_mardi <- renderPlotly({
+    req(transformed_data())
+    
+    data_lundi <- transformed_data() %>%
+      filter(Jour == "mardi") %>%
+      count(Horaires,Groupe)  # Compter le nombre de réservations par horaire
+    
+    plot_ly(data_lundi, 
+            x = ~Horaires, 
+            y = ~n, 
+            color = ~Groupe,
+            type = 'bar',
+            text = ~n, textposition = 'outside') %>% 
+      layout(
+        title = "Mardi",
+        xaxis = list(title = "Horaires", tickangle = -45),
+        yaxis = list(title = "Nombre de Réservations"),
+        showlegend = TRUE
+      )
+  })
+  
+  output$plot_horaires_par_jour_categorie_mercredi <- renderPlotly({
+    req(transformed_data())
+    
+    data_lundi <- transformed_data() %>%
+      filter(Jour == "mercredi") %>%
+      count(Horaires,Groupe)  # Compter le nombre de réservations par horaire
+    
+    plot_ly(data_lundi, 
+            x = ~Horaires, 
+            y = ~n, 
+            color = ~Groupe,
+            type = 'bar',
+            text = ~n, textposition = 'outside') %>% 
+      layout(
+        title = "Mercredi",
+        xaxis = list(title = "Horaires", tickangle = -45),
+        yaxis = list(title = "Nombre de Réservations"),
+        showlegend = TRUE
+      )
+  })
+  
+  output$plot_horaires_par_jour_categorie_jeudi <- renderPlotly({
+    req(transformed_data())
+    
+    data_lundi <- transformed_data() %>%
+      filter(Jour == "jeudi") %>%
+      count(Horaires,Groupe)  # Compter le nombre de réservations par horaire
+    
+    plot_ly(data_lundi, 
+            x = ~Horaires, 
+            y = ~n, 
+            color = ~Groupe,
+            type = 'bar', 
+            text = ~n, textposition = 'outside') %>% 
+      layout(
+        title = "Jeudi",
+        xaxis = list(title = "Horaires", tickangle = -45),
+        yaxis = list(title = "Nombre de Réservations"),
+        showlegend = TRUE
+      )
+  })
+  
+  output$plot_horaires_par_jour_categorie_vendredi <- renderPlotly({
+    req(transformed_data())
+    
+    data_lundi <- transformed_data() %>%
+      filter(Jour == "vendredi") %>%
+      count(Horaires,Groupe)  # Compter le nombre de réservations par horaire
+    
+    plot_ly(data_lundi, 
+            x = ~Horaires, 
+            y = ~n, 
+            color = ~Groupe,
+            type = 'bar',
+            text = ~n, textposition = 'outside') %>% 
+      layout(
+        title = "Vendredi",
+        xaxis = list(title = "Horaires", tickangle = -45),
+        yaxis = list(title = "Nombre de Réservations"),
+        showlegend = TRUE
+      )
+  })
+  
+  output$plot_horaires_par_jour_categorie_samedi <- renderPlotly({
+    req(transformed_data())
+    
+    data_lundi <- transformed_data() %>%
+      filter(Jour == "samedi") %>%
+      count(Horaires,Groupe)  # Compter le nombre de réservations par horaire
+    
+    plot_ly(data_lundi, 
+            x = ~Horaires, 
+            y = ~n, 
+            color = ~Groupe,
+            type = 'bar',
+            text = ~n, textposition = 'outside') %>% 
+      layout(
+        title = "Samedi",
+        xaxis = list(title = "Horaires", tickangle = -45),
+        yaxis = list(title = "Nombre de Réservations"),
+        showlegend = TRUE
+      )
+  })
+  
+  output$plot_horaires_par_jour_categorie_dimanche <- renderPlotly({
+    req(transformed_data())
+    
+    data_lundi <- transformed_data() %>%
+      filter(Jour == "dimanche") %>%
+      count(Horaires,Groupe)  # Compter le nombre de réservations par horaire
+    
+    plot_ly(data_lundi, 
+            x = ~Horaires, 
+            y = ~n, 
+            color = ~Groupe,
+            type = 'bar',
+            text = ~n, textposition = 'outside') %>% 
+      layout(
+        title =  "Dimanche",
+        xaxis = list(title = "Horaires", tickangle = -45),
+        yaxis = list(title = "Nombre de Réservations"),
+        showlegend = TRUE
+      )
+  })
+  
+  
+  
+  
+  # 15. Nb de réservation par jour et par horaire et par genre
+  
+  
+  output$plot_horaires_par_jour_genre_lundi <- renderPlotly({
+    req(transformed_data())
+    
+    couleurs_sexe <- c("Femme" = "pink", "Homme" = "skyblue")
+    
+    data_lundi <- transformed_data() %>%
+      filter(Jour == "lundi") %>%
+      count(Horaires,Sexe)  # Compter le nombre de réservations par horaire
+    
+    plot_ly(data_lundi, 
+            x = ~Horaires, 
+            y = ~n, 
+            color = ~Sexe, 
+            colors = couleurs_sexe,
+            type = 'bar', 
+            text = ~n, textposition = 'outside') %>% 
+      layout(
+        title = "Lundi",
+        xaxis = list(title = "Horaires", tickangle = -45),
+        yaxis = list(title = "Nombre de Réservations"),
+        showlegend = TRUE
+      )
+  })
+  
+  output$plot_horaires_par_jour_genre_mardi <- renderPlotly({
+    req(transformed_data())
+    
+    couleurs_sexe <- c("Femme" = "pink", "Homme" = "skyblue")
+    
+    data_lundi <- transformed_data() %>%
+      filter(Jour == "mardi") %>%
+      count(Horaires,Sexe)  # Compter le nombre de réservations par horaire
+    
+    plot_ly(data_lundi, 
+            x = ~Horaires, 
+            y = ~n, 
+            color = ~Sexe, 
+            colors = couleurs_sexe,
+            type = 'bar',
+            text = ~n, textposition = 'outside') %>% 
+      layout(
+        title = "Mardi",
+        xaxis = list(title = "Horaires", tickangle = -45),
+        yaxis = list(title = "Nombre de Réservations"),
+        showlegend = TRUE
+      )
+  })
+  
+  output$plot_horaires_par_jour_genre_mercredi <- renderPlotly({
+    req(transformed_data())
+    
+    couleurs_sexe <- c("Femme" = "pink", "Homme" = "skyblue")
+    
+    data_lundi <- transformed_data() %>%
+      filter(Jour == "mercredi") %>%
+      count(Horaires,Sexe)  # Compter le nombre de réservations par horaire
+    
+    plot_ly(data_lundi, 
+            x = ~Horaires, 
+            y = ~n, 
+            color = ~Sexe, 
+            colors = couleurs_sexe,
+            type = 'bar',
+            text = ~n, textposition = 'outside') %>% 
+      layout(
+        title = "Mercredi",
+        xaxis = list(title = "Horaires", tickangle = -45),
+        yaxis = list(title = "Nombre de Réservations"),
+        showlegend = TRUE
+      )
+  })
+  
+  output$plot_horaires_par_jour_genre_jeudi <- renderPlotly({
+    req(transformed_data())
+    
+    couleurs_sexe <- c("Femme" = "pink", "Homme" = "skyblue")
+    
+    data_lundi <- transformed_data() %>%
+      filter(Jour == "jeudi") %>%
+      count(Horaires,Sexe)  # Compter le nombre de réservations par horaire
+    
+    plot_ly(data_lundi, 
+            x = ~Horaires, 
+            y = ~n, 
+            color = ~Sexe, 
+            colors = couleurs_sexe,
+            type = 'bar', 
+            text = ~n, textposition = 'outside') %>% 
+      layout(
+        title = "Jeudi",
+        xaxis = list(title = "Horaires", tickangle = -45),
+        yaxis = list(title = "Nombre de Réservations"),
+        showlegend = TRUE
+      )
+  })
+  
+  output$plot_horaires_par_jour_genre_vendredi <- renderPlotly({
+    req(transformed_data())
+    
+    couleurs_sexe <- c("Femme" = "pink", "Homme" = "skyblue")
+    
+    data_lundi <- transformed_data() %>%
+      filter(Jour == "vendredi") %>%
+      count(Horaires,Sexe)  # Compter le nombre de réservations par horaire
+    
+    plot_ly(data_lundi, 
+            x = ~Horaires, 
+            y = ~n, 
+            color = ~Sexe, 
+            colors = couleurs_sexe,
+            type = 'bar',
+            text = ~n, textposition = 'outside') %>% 
+      layout(
+        title = "Vendredi",
+        xaxis = list(title = "Horaires", tickangle = -45),
+        yaxis = list(title = "Nombre de Réservations"),
+        showlegend = TRUE
+      )
+  })
+  
+  output$plot_horaires_par_jour_genre_samedi <- renderPlotly({
+    req(transformed_data())
+    
+    couleurs_sexe <- c("Femme" = "pink", "Homme" = "skyblue")
+    
+    data_lundi <- transformed_data() %>%
+      filter(Jour == "samedi") %>%
+      count(Horaires,Sexe)  # Compter le nombre de réservations par horaire
+    
+    plot_ly(data_lundi, 
+            x = ~Horaires, 
+            y = ~n, 
+            color = ~Sexe, 
+            colors = couleurs_sexe,
+            type = 'bar',
+            text = ~n, textposition = 'outside') %>% 
+      layout(
+        title = "Samedi",
+        xaxis = list(title = "Horaires", tickangle = -45),
+        yaxis = list(title = "Nombre de Réservations"),
+        showlegend = TRUE
+      )
+  })
+  
+  output$plot_horaires_par_jour_genre_dimanche <- renderPlotly({
+    req(transformed_data())
+    
+    couleurs_sexe <- c("Femme" = "pink", "Homme" = "skyblue")
+    
+    data_lundi <- transformed_data() %>%
+      filter(Jour == "dimanche") %>%
+      count(Horaires,Sexe)  # Compter le nombre de réservations par horaire
+    
+    plot_ly(data_lundi, 
+            x = ~Horaires, 
+            y = ~n, 
+            color = ~Sexe, 
+            colors = couleurs_sexe,
+            type = 'bar',
+            text = ~n, textposition = 'outside') %>% 
+      layout(
+        title =  "Dimanche",
+        xaxis = list(title = "Horaires", tickangle = -45),
+        yaxis = list(title = "Nombre de Réservations"),
+        showlegend = TRUE
+      )
+  })
+  
+ 
+  
+  
+  # 16. Classement de joueurs ayant plus joué
   
   output$table_top_joueurs <- renderDataTable({
     req(transformed_data())
@@ -675,62 +1146,7 @@ server <- function(input, output, session) {
     colnames(data) <- c("Joueurs","Catégorie", "Nombre")
     
     DT::datatable(data, options = list(pageLength = 20, autoWidth = TRUE))
-  })  
-  
-  
-  # output$plot_horaires_par_jour <- renderPlotly({
-  #   req(transformed_data())
-  #   
-  #   data <- transformed_data() %>%
-  #     count(Jour, Horaires)  # Compter le nombre d'occurrences par jour et horaire
-  #   
-  #   plot_ly(data, 
-  #           x = ~Horaires, 
-  #           y = ~n, 
-  #           color = ~Jour,  # Un graphique par jour
-  #           type = 'bar',
-  #           text = ~n,  
-  #           textposition = 'auto', 
-  #           textfont = list(size = 14, color = "black")) %>%
-  #     layout(
-  #       title = input$title_par_jour_horaire,
-  #       xaxis = list(title = "Horaires", tickangle = -45),
-  #       yaxis = list(title = "Nombre de Réservations"),
-  #       barmode = "group",  # Affiche les jours en groupe
-  #       showlegend = TRUE
-  #     )
-  # })
-  
-  
-  output$plot_horaires_par_jour <- renderPlotly({
-    req(transformed_data())
-    
-    data <- transformed_data() %>%
-      count(Jour, Horaires)  # Compter le nombre d'occurrences par jour et horaire
-    
-    jours_ordre <- c("lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi", "dimanche")
-    
-    plots <- lapply(jours_ordre, function(jour) {
-      data_jour <- data %>% filter(Jour == jour)
-      
-      plot_ly(data_jour, 
-              x = ~Horaires, 
-              y = ~n, 
-              type = 'bar', 
-              name = jour,
-              marker = list(color = 'lightblue')) %>% 
-        layout(
-          title = paste("Réservations du", jour),
-          xaxis = list(title = "Horaires", tickangle = -45),
-          yaxis = list(title = "Nombre de Réservations"),
-          showlegend = FALSE
-        )
-    })
-    
-    subplot(plots, nrows = 7, shareX = TRUE, shareY = TRUE, titleX = TRUE, titleY = TRUE) %>%
-      layout(margin = list(b = 100, t = 50), grid = list(rows = 7, columns = 1, pattern = "independent", roworder = "top to bottom", ygap = 0.2))  })
-  
-  
+  }) 
   
     
 } # Crochet de FIN
