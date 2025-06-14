@@ -28,6 +28,13 @@ server <- function(input, output, session) {
   tarif_groups <- reactiveVal(list()) # Stockage des groupes de tarifs
   available_tarifs <- reactiveVal(NULL) # Tarifs disponibles (modifiable)
   applied_tarifs <- reactiveVal(data.frame(Groupe = character(), Tarifs = list(), stringsAsFactors = FALSE))  
+  titre_modifie_manuellement <- reactiveVal(FALSE)
+  
+  observeEvent(input$title_horaire_jour_cat, {
+    # Si l'utilisateur modifie le titre manuellement, on le note
+    titre_modifie_manuellement(TRUE)
+  })
+  
   
   # Fonction de nettoyage des libellés
   clean_labels <- function(df, column_name = "Libellé") {
@@ -334,44 +341,9 @@ server <- function(input, output, session) {
       )
   })
 
-
-  
-  
-  
-
   
   # 2. Nb de réservation tot H et F
 
-  
-  
-  # output$plot_total_hf <- renderPlotly({
-  #   req(transformed_data())
-  #   data <- transformed_data() %>%
-  #     count(Sexe)  # Compter le nombre de réservations par genre
-  #   
-  #   couleurs_sexe <- c("Femme" = "pink", "Homme" = "skyblue")
-  #     
-  #   
-  #   plot_ly(
-  #     data, 
-  #     x = ~Sexe, 
-  #     y = ~n, 
-  #     type = 'bar', 
-  #     color = ~Sexe,
-  #     colors = couleurs_sexe,
-  #     #marker = list(color = c("pink", "skyblue")),  # Bleu pour H, Rose pour F
-  #     text = ~n, 
-  #     textposition = 'auto',
-  #     textfont = list(size = 14, color = "black")  # Texte plus grand et noir
-  #   ) %>%
-  #     layout(
-  #       title = input$title_total_hf,
-  #       xaxis = list(title = "Genre"),
-  #       yaxis = list(title = "Nombre de Réservations"),
-  #       showlegend = TRUE
-  #     )
-  # })
-  
   
   output$plot_total_hf <- renderPlotly({
     req(transformed_data())
@@ -437,62 +409,15 @@ server <- function(input, output, session) {
       textfont = list(size = 14, color = "black")
     ) %>%
       layout(
-        title = input$title_total_hf_perc_ens,
+        title = input$title_total_hf_perc,
         xaxis = list(title = "Genre"),
         #yaxis = list(title = ifelse(input$affichage_total_hf == "percentage", "Pourcentage (%)", "Nombre de Réservations")),
         yaxis = list(title = "Pourcentage (%)"),
         showlegend = TRUE
       )
   })
-  
-  
-  # output$plot_total_hf_perc_grp <- renderPlotly({
-  #   req(transformed_data())
-  #   
-  #   data <- transformed_data() %>%
-  #     count(Sexe)  # Comptage des réservations par sexe
-  #   
-  #   # total <- sum(data$n)  # Nombre total de réservations
-  #   # 
-  #   # 
-  #   #   data <- data %>%
-  #   #     mutate(n = round((n / total) * 100, 2))  # Convertir en pourcentage
-  #     
-  #     
-  #     par_heures_categorie <- data %>%
-  #       group_by(Groupe) %>%
-  #       summarise(total = sum(n))
-  # 
-  #     # Calculer le pourcentage par catégorie
-  #     data <- data %>%
-  #       left_join(par_heures_categorie, by = "Groupe") %>%
-  #       mutate(n = round((n / total) * 100, 2)) %>%
-  #       select(-total)
-  #   
-  #   
-  #   couleurs_sexe <- c("Femme" = "pink", "Homme" = "skyblue")
-  #   
-  #   plot_ly(
-  #     data,
-  #     x = ~Sexe,
-  #     y = ~n,
-  #     type = 'bar',
-  #     color = ~Sexe,
-  #     colors = couleurs_sexe,
-  #     text = ~round(n, 2),  # Arrondir le texte affiché
-  #     #text = ~ifelse(input$affichage_total_hf == "percentage", paste0(round(n, 1), "%"), n),
-  #     textposition = 'auto',
-  #     textfont = list(size = 14, color = "black")
-  #   ) %>%
-  #     layout(
-  #       title = input$title_total_hf_perc_grp,
-  #       xaxis = list(title = "Genre"),
-  #       #yaxis = list(title = ifelse(input$affichage_total_hf == "percentage", "Pourcentage (%)", "Nombre de Réservations")),
-  #       yaxis = list(title = "Pourcentage (%)"),
-  #       showlegend = TRUE
-  #     )
-  # })
-  # 
+
+
   output$ratio <- renderText({
     req(transformed_data())
     data <- transformed_data() %>%
@@ -502,8 +427,9 @@ server <- function(input, output, session) {
     nbF <- sum(data$Sexe=="Femme")
     nbH <- sum(data$Sexe=="Homme")
     ratio <- max(nbF, nbH) / min(nbF, nbH)
-    paste("Le ratio est de :", round(ratio,2),".\nC'est à dire il y a ",
-          round(ratio,2),ifelse(max(nbF, nbH)==nbH,"Hommes","Femmes"),"pour 1", ifelse(min(nbF, nbH)==nbH,"Homme.","Femme.") )
+    paste("Le ratio est de :", round(ratio,2),".\nC'est à dire, qu'il y a ",
+          round(ratio,2),ifelse(max(nbF, nbH)==nbH,"réservations effectuées par les hommes pour une réservation effectuée par une femme.",
+                                "réservation effectuées par les femmes pour une réservation effectué par un homme.") )
   })
 
   
@@ -537,8 +463,6 @@ server <- function(input, output, session) {
   })
   
   
-  
-  
   output$plot_par_categorie_perc <- renderPlotly({
     req(transformed_data())
     data <- transformed_data() %>%
@@ -567,41 +491,6 @@ server <- function(input, output, session) {
   
   # 4. Nb de réservation par catégorie H et F
 
-  # Fais le pourcentage sur l'ensemble des personnes 
-  # output$plot_par_categorie_hf <- renderPlotly({
-  #   req(transformed_data())
-  #   
-  #   # Comptage par catégorie et sexe
-  #   data <- transformed_data() %>%
-  #     count(Groupe, Sexe)
-  #   
-  #   total <- sum(data$n)  # Nombre total de réservations
-  #   
-  #   if (input$affichage_par_categorie_hf == "percentage") {
-  #     data <- data %>%
-  #       mutate(n = round((n / total) * 100, 2)) # Convertir en pourcentage 
-  #   }
-  #   
-  #   # Définition des couleurs (rose pour Femme, bleu pour Homme)
-  #   couleurs_sexe <- c("Femme" = "pink", "Homme" = "skyblue")
-  # 
-  #       plot_ly(data, 
-  #           x = ~Groupe, 
-  #           y = ~n, 
-  #           color = ~Sexe, 
-  #           colors = couleurs_sexe,  # Appliquer les couleurs
-  #           type = 'bar', 
-  #           text = ~n,  
-  #           textposition = 'auto', 
-  #           textfont = list(size = 14, color = "black")) %>%
-  #     layout(
-  #       title = input$title_par_categorie_hf,
-  #       xaxis = list(title = "Catégorie"),
-  #       #yaxis = list(title = "Nombre de Réservations"),
-  #       yaxis = list(title = ifelse(input$affichage_par_categorie_hf == "percentage", "Pourcentage (%)", "Nombre de Réservations")),
-  #       showlegend = TRUE
-  #     )
-  # })
   
   output$plot_par_categorie_hf <- renderPlotly({
     req(transformed_data())
@@ -609,19 +498,7 @@ server <- function(input, output, session) {
     # Comptage par catégorie et sexe
     data <- transformed_data() %>%
       count(Groupe, Sexe)
-    
-    # if (input$affichage_par_categorie_hf == "percentage") {
-    #   # Calculer le total par catégorie
-    #   total_par_categorie <- data %>%
-    #     group_by(Groupe) %>%
-    #     summarise(total = sum(n))
-    #   
-    #   # Calculer le pourcentage par catégorie
-    #   data <- data %>%
-    #     left_join(total_par_categorie, by = "Groupe") %>%
-    #     mutate(n = round((n / total) * 100, 2)) %>%
-    #     select(-total)
-    # }
+
     
     # Définition des couleurs (rose pour Femme, bleu pour Homme)
     couleurs_sexe <- c("Femme" = "pink", "Homme" = "skyblue")
@@ -644,8 +521,38 @@ server <- function(input, output, session) {
   })
   
   
-  
-  
+  output$plot_par_categorie_hf_perc_ens <- renderPlotly({
+    req(transformed_data())
+    
+    # Comptage par catégorie et sexe
+    data <- transformed_data() %>%
+      count(Groupe, Sexe)
+    
+    total <- sum(data$n) 
+    
+    data <- data %>%
+      mutate(n = round((n / total) * 100, 2))
+    
+    
+    # Définition des couleurs (rose pour Femme, bleu pour Homme)
+    couleurs_sexe <- c("Femme" = "pink", "Homme" = "skyblue")
+    
+    plot_ly(data,
+            x = ~Groupe,
+            y = ~n,
+            color = ~Sexe,
+            colors = couleurs_sexe,  # Appliquer les couleurs
+            type = 'bar',
+            text = ~n,
+            textposition = 'auto',
+            textfont = list(size = 14, color = "black")) %>%
+      layout(
+        title = input$title_par_categorie_hf_perc_ens,
+        xaxis = list(title = "Catégorie"),
+        yaxis = list(title =  "Pourcentage (%)"),
+        showlegend = TRUE
+      )
+  })
   
   
   output$plot_par_categorie_hf_perc_grp <- renderPlotly({
@@ -683,52 +590,7 @@ server <- function(input, output, session) {
       layout(
         title = input$title_par_categorie_hf_perc_grp,
         xaxis = list(title = "Catégorie"),
-        yaxis = list(title =  "Pourcentage (%)"),
-        showlegend = TRUE
-      )
-  })
-  
-  output$plot_par_categorie_hf_perc_ens <- renderPlotly({
-    req(transformed_data())
-    
-    # Comptage par catégorie et sexe
-    data <- transformed_data() %>%
-      count(Groupe, Sexe)
-    
-    total <- sum(data$n) 
-    
-    data <- data %>%
-      mutate(n = round((n / total) * 100, 2))
-    
-    #if (input$affichage_par_categorie_hf == "percentage") {
-    # Calculer le total par catégorie
-    # total_par_categorie <- data %>%
-    #   group_by(Groupe) %>%
-    #   summarise(total = sum(n))
-    # 
-    # # Calculer le pourcentage par catégorie
-    # data <- data %>%
-    #   left_join(total_par_categorie, by = "Groupe") %>%
-    #   mutate(n = round((n / total) * 100, 2)) %>%
-    #   select(-total)
-    #}
-    
-    # Définition des couleurs (rose pour Femme, bleu pour Homme)
-    couleurs_sexe <- c("Femme" = "pink", "Homme" = "skyblue")
-    
-    plot_ly(data,
-            x = ~Groupe,
-            y = ~n,
-            color = ~Sexe,
-            colors = couleurs_sexe,  # Appliquer les couleurs
-            type = 'bar',
-            text = ~n,
-            textposition = 'auto',
-            textfont = list(size = 14, color = "black")) %>%
-      layout(
-        title = input$title_par_categorie_hf_perc_ens,
-        xaxis = list(title = "Catégorie"),
-        yaxis = list(title =  "Pourcentage (%)"),
+        yaxis = list(title = "Pourcentage (%)"),
         showlegend = TRUE
       )
   })
@@ -787,7 +649,6 @@ server <- function(input, output, session) {
       layout(
         title = input$title_par_heures_perc,
         xaxis = list(title = "Heures"),
-        #yaxis = list(title = "Nombre de Réservations"),
         yaxis = list(title =  "Pourcentage (%)"),
         showlegend = FALSE
       )
@@ -869,18 +730,6 @@ server <- function(input, output, session) {
     data <- transformed_data() %>%
       count(Horaires, Groupe) # Comptage par heure et catégorie
     
-    # if (input$affichage_par_heures_categorie == "percentage") {
-    #   # Calculer le total par catégorie
-    #   par_heures_categorie <- data %>%
-    #     group_by(Groupe) %>%
-    #     summarise(total = sum(n))
-    #   
-    #   # Calculer le pourcentage par catégorie
-    #   data <- data %>%
-    #     left_join(par_heures_categorie, by = "Groupe") %>%
-    #     mutate(n = round((n / total) * 100, 2)) %>%
-    #     select(-total)
-    # }
     
     plot_ly(data, x = ~Horaires, y = ~n, color = ~Groupe, type = 'bar', text = ~n, textposition = 'outside') %>%
       layout(
@@ -892,9 +741,30 @@ server <- function(input, output, session) {
       )
   })
   
+  output$plot_par_heures_categorie_scat <- renderPlotly({
+    req(transformed_data())
+    data <- transformed_data() %>%
+      count(Horaires, Groupe) # Comptage par heure et catégorie
+    
+    hours_order <- sort(unique(data$Horaires))
+    
+    data <- data %>%
+      mutate(Horaires = factor(Horaires, levels = hours_order)) %>%
+      complete(Horaires = factor(hours_order, levels = hours_order), Groupe, fill = list(n = 0))
+    
+    
+    plot_ly(data, x = ~Horaires, y = ~n, color = ~Groupe, type = 'scatter', mode = 'markers+lines', text = ~n, textposition = 'outside') %>%
+      layout(
+        title = input$title_par_heures_categorie_scat,
+        xaxis = list(title = "Heures"),
+        yaxis = list(title =  "Nombre de Réservations"),
+        
+        showlegend = TRUE
+      )
+  })
   
   
-  output$plot_par_heures_categorie_perc <- renderPlotly({
+  output$plot_par_heures_categorie_perc_grp <- renderPlotly({
     req(transformed_data())
     data <- transformed_data() %>%
       count(Horaires, Groupe) # Comptage par heure et catégorie
@@ -914,10 +784,43 @@ server <- function(input, output, session) {
     
     plot_ly(data, x = ~Horaires, y = ~n, color = ~Groupe, type = 'bar', text = ~n, textposition = 'outside') %>%
       layout(
-        title = input$title_par_heures_categorie_perc,
+        title = input$title_par_heures_categorie_perc_grp,
         xaxis = list(title = "Heures"),
         yaxis = list(title =  "Pourcentage (%)"),
-        #yaxis = list(title = "Nombre de Réservations"),
+        showlegend = TRUE
+      )
+  })
+  
+  
+  output$plot_par_heures_categorie_perc_ens <- renderPlotly({
+    req(transformed_data())
+    data <- transformed_data() %>%
+      count(Horaires, Groupe) # Comptage par heure et catégorie
+    
+    #if (input$affichage_par_heures_categorie == "percentage") {
+    # Calculer le total par catégorie
+    # par_heures_categorie <- data %>%
+    #   group_by(Groupe) %>%
+    #   summarise(total = sum(n))
+    # 
+    # # Calculer le pourcentage par catégorie
+    # data <- data %>%
+    #   left_join(par_heures_categorie, by = "Groupe") %>%
+    #   mutate(n = round((n / total) * 100, 2)) %>%
+    #   select(-total)
+    #}
+    
+    total <- sum(data$n)  # Nombre total de réservations
+    
+    #if (input$affichage_par_heures == "percentage") {
+    data <- data %>%
+      mutate(n = round((n / total) * 100, 2))
+    
+    plot_ly(data, x = ~Horaires, y = ~n, color = ~Groupe, type = 'bar', text = ~n, textposition = 'outside') %>%
+      layout(
+        title = input$title_par_heures_categorie_perc_ens,
+        xaxis = list(title = "Heures"),
+        yaxis = list(title =  "Pourcentage (%)"),
         showlegend = TRUE
       )
   })
@@ -991,7 +894,6 @@ server <- function(input, output, session) {
       layout(
         title = input$title_par_jour_perc,
         xaxis = list(title = "Jour"),
-        #yaxis = list(title = "Nombre de Réservations"),
         yaxis = list(title =  "Pourcentage (%)"),
         showlegend = FALSE
       )
@@ -1035,7 +937,8 @@ server <- function(input, output, session) {
       count(Jour, Groupe) %>%
       complete(Jour = factor(days_order, levels = days_order), Groupe, fill = list(n = 0))  # Remplir les combinaisons manquantes avec n = 0
     
-    plot_ly(data, x = ~Jour, y = ~n, color = ~Groupe, type = 'scatter', mode = 'markers+lines', text = ~n, textposition = 'top center') %>%
+    plot_ly(data, x = ~Jour, y = ~n, color = ~Groupe, type = 'scatter', mode = 'markers+lines', text = ~n, textposition = 'auto', 
+            textfont = list(size = 14, color = "black")) %>%
       layout(
         title = input$title_par_jour_categorie_scat,
         xaxis = list(title = "Jour"),
@@ -1045,9 +948,7 @@ server <- function(input, output, session) {
   })
   
   
-  
-  
-  output$plot_par_jour_categorie_perc <- renderPlotly({
+  output$plot_par_jour_categorie_perc_ens <- renderPlotly({
     req(transformed_data())
     data <- transformed_data()
     
@@ -1066,7 +967,7 @@ server <- function(input, output, session) {
     
     plot_ly(data, x = ~Jour, y = ~n, color = ~Groupe, type = 'bar', text = ~n, textposition = 'outside') %>%
       layout(
-        title = input$title_par_jour_categorie_perc,
+        title = input$title_par_jour_categorie_perc_ens,
         xaxis = list(title = "Jour"),
         yaxis = list(title = "Pourcentage (%)"),
         showlegend = TRUE
@@ -1107,7 +1008,38 @@ server <- function(input, output, session) {
   })
   
   
-
+  output$plot_par_jour_categorie_perc_jour <- renderPlotly({
+    req(transformed_data())
+    data <- transformed_data()
+    
+    # Définir l'ordre des jours de la semaine
+    days_order <- c("lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi", "dimanche")
+    
+    # Compter les occurrences par jour et groupe
+    data <- data %>%
+      mutate(Jour = factor(Jour, levels = days_order)) %>%
+      count(Jour, Groupe)
+    
+    # Calculer le total par groupe
+    total_par_groupe <- data %>%
+      group_by(Jour) %>%
+      summarise(total = sum(n), .groups = 'drop')
+    
+    # Calcul du pourcentage au sein de chaque groupe
+    data <- data %>%
+      left_join(total_par_groupe, by = "Jour") %>%
+      mutate(n = round((n / total) * 100, 2)) %>%
+      select(-total)
+    
+    # Graphique
+    plot_ly(data, x = ~Jour, y = ~n, color = ~Groupe, type = 'bar', text = ~n, textposition = 'outside') %>%
+      layout(
+        title = input$title_par_jour_categorie_perc_jour,
+        xaxis = list(title = "Jour"),
+        yaxis = list(title = "Pourcentage (%)"),
+        showlegend = TRUE
+      )
+  })
 
   
   # 9. Nb de réservations par jour selon le genre
@@ -1144,7 +1076,41 @@ server <- function(input, output, session) {
       )
   })
   
-  output$plot_par_jour_sexe_perc <- renderPlotly({
+  output$plot_par_jour_sexe_scat <- renderPlotly({
+    req(transformed_data())
+    
+    data <- transformed_data() %>%
+      count(Jour, Sexe)
+    
+    # Définition des couleurs (rose pour Femme, bleu pour Homme)
+    couleurs_sexe <- c("Femme" = "pink", "Homme" = "skyblue")
+    
+    # Définir l'ordre des jours de la semaine
+    days_order <- c("lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi", "dimanche")
+    
+    data <- data %>%
+      mutate(Jour = factor(Jour, levels = days_order)) %>%
+      complete(Jour = factor(days_order, levels = days_order), Sexe, fill = list(n = 0))
+    
+    plot_ly(data, 
+            x = ~Jour, 
+            y = ~n, 
+            color = ~Sexe, 
+            colors = couleurs_sexe, 
+            type = 'scatter', 
+            mode = 'markers+lines',
+            text = ~n,  
+            textposition = 'auto', 
+            textfont = list(size = 14, color = "black")) %>%
+      layout(
+        title = input$title_par_jour_genre_scat,
+        xaxis = list(title = "Jour"),
+        yaxis = list(title = "Nombre de Réservations"),
+        showlegend = TRUE
+      )
+  })
+  
+  output$plot_par_jour_sexe_perc_ens <- renderPlotly({
     req(transformed_data())
     
     data <- transformed_data() %>%
@@ -1174,7 +1140,123 @@ server <- function(input, output, session) {
             textposition = 'auto', 
             textfont = list(size = 14, color = "black")) %>%
       layout(
-        title = input$title_par_jour_genre_perc,
+        title = input$title_par_jour_genre_perc_ens,
+        xaxis = list(title = "Jour"),
+        yaxis = list(title = "Pourcentage (%)"),
+        showlegend = TRUE
+      )
+  })
+  
+  output$plot_par_jour_sexe_perc_grp <- renderPlotly({
+    req(transformed_data())
+    
+    data <- transformed_data() %>%
+      count(Jour, Sexe)
+    
+    # par_heures_categorie <- data %>%
+    #   group_by(Groupe) %>%
+    #   summarise(total = sum(n))
+    # 
+    # # Calculer le pourcentage par catégorie
+    # data <- data %>%
+    #   left_join(par_heures_categorie, by = "Groupe") %>%
+    #   mutate(n = round((n / total) * 100, 2)) %>%
+    #   select(-total)
+    # 
+    
+    total_par_groupe <- data %>%
+      group_by(Sexe) %>%
+      summarise(total = sum(n), .groups = 'drop')
+    
+    # Calcul du pourcentage au sein de chaque groupe
+    data <- data %>%
+      left_join(total_par_groupe, by = "Sexe") %>%
+      mutate(n = round((n / total) * 100, 2)) %>%
+      select(-total)
+    
+    # total <- sum(data$n)
+    # 
+    # data <- data %>%
+    #   mutate(n = round((n / total) * 100, 2))
+    
+    # Définition des couleurs (rose pour Femme, bleu pour Homme)
+    couleurs_sexe <- c("Femme" = "pink", "Homme" = "skyblue")
+    
+    # Définir l'ordre des jours de la semaine
+    days_order <- c("lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi", "dimanche")
+    
+    data <- data %>%
+      mutate(Jour = factor(Jour, levels = days_order))
+    
+    plot_ly(data, 
+            x = ~Jour, 
+            y = ~n, 
+            color = ~Sexe, 
+            colors = couleurs_sexe, 
+            type = 'bar', 
+            text = ~n,  
+            textposition = 'auto', 
+            textfont = list(size = 14, color = "black")) %>%
+      layout(
+        title = input$title_par_jour_genre_perc_grp,
+        xaxis = list(title = "Jour"),
+        yaxis = list(title = "Pourcentage (%)"),
+        showlegend = TRUE
+      )
+  })
+  
+  output$plot_par_jour_sexe_perc_jour <- renderPlotly({
+    req(transformed_data())
+    
+    data <- transformed_data() %>%
+      count(Jour, Sexe)
+    
+    # par_heures_categorie <- data %>%
+    #   group_by(Groupe) %>%
+    #   summarise(total = sum(n))
+    # 
+    # # Calculer le pourcentage par catégorie
+    # data <- data %>%
+    #   left_join(par_heures_categorie, by = "Groupe") %>%
+    #   mutate(n = round((n / total) * 100, 2)) %>%
+    #   select(-total)
+    # 
+    
+    total_par_groupe <- data %>%
+      group_by(Jour) %>%
+      summarise(total = sum(n), .groups = 'drop')
+    
+    # Calcul du pourcentage au sein de chaque groupe
+    data <- data %>%
+      left_join(total_par_groupe, by = "Jour") %>%
+      mutate(n = round((n / total) * 100, 2)) %>%
+      select(-total)
+    
+    # total <- sum(data$n)
+    # 
+    # data <- data %>%
+    #   mutate(n = round((n / total) * 100, 2))
+    
+    # Définition des couleurs (rose pour Femme, bleu pour Homme)
+    couleurs_sexe <- c("Femme" = "pink", "Homme" = "skyblue")
+    
+    # Définir l'ordre des jours de la semaine
+    days_order <- c("lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi", "dimanche")
+    
+    data <- data %>%
+      mutate(Jour = factor(Jour, levels = days_order))
+    
+    plot_ly(data, 
+            x = ~Jour, 
+            y = ~n, 
+            color = ~Sexe, 
+            colors = couleurs_sexe, 
+            type = 'bar', 
+            text = ~n,  
+            textposition = 'auto', 
+            textfont = list(size = 14, color = "black")) %>%
+      layout(
+        title = input$title_par_jour_genre_perc_jour,
         xaxis = list(title = "Jour"),
         yaxis = list(title = "Pourcentage (%)"),
         showlegend = TRUE
@@ -1202,14 +1284,49 @@ server <- function(input, output, session) {
             textposition = 'auto', 
             textfont = list(size = 14, color = "black")) %>%
       layout(
-        title = input$title_par_heure_genre,
+        title = input$title_par_heure_sexe,
         xaxis = list(title = "Heures"),
         yaxis = list(title = "Nombre de Réservations"),
         showlegend = TRUE
       )
   })
   
-  output$plot_par_heures_sexe_perc <- renderPlotly({
+  output$plot_par_heures_sexe_scat <- renderPlotly({
+    req(transformed_data())
+    
+    data <- transformed_data() %>%
+      count(Horaires, Sexe) 
+    
+    hours_order <- sort(unique(data$Horaires))
+    
+    data <- data %>%
+      mutate(Horaires = factor(Horaires, levels = hours_order)) %>%
+      complete(Horaires = factor(hours_order, levels = hours_order), Sexe, fill = list(n = 0))
+    
+    
+    
+    # Définition des couleurs (rose pour Femme, bleu pour Homme)
+    couleurs_sexe <- c("Femme" = "pink", "Homme" = "skyblue")
+    
+    plot_ly(data, 
+            x = ~Horaires, 
+            y = ~n, 
+            color = ~Sexe, 
+            colors = couleurs_sexe, 
+            type = 'scatter', 
+            mode = 'markers+lines',
+            text = ~n,  
+            textposition = 'auto', 
+            textfont = list(size = 14, color = "black")) %>%
+      layout(
+        title = input$title_par_heures_sexe_scat,
+        xaxis = list(title = "Heures"),
+        yaxis = list(title = "Nombre de Réservations"),
+        showlegend = TRUE
+      )
+  })
+  
+  output$plot_par_heures_sexe_perc_ens <- renderPlotly({
     req(transformed_data())
     
     data <- transformed_data() %>%
@@ -1233,13 +1350,54 @@ server <- function(input, output, session) {
             textposition = 'auto', 
             textfont = list(size = 14, color = "black")) %>%
       layout(
-        title = input$title_par_heure_genre_perc,
+        title = input$title_par_heure_sexe_perc_ens,
         xaxis = list(title = "Heures"),
         yaxis = list(title = "Pourcentage (%)"),
         showlegend = TRUE
       )
   })
 
+  output$plot_par_heures_sexe_perc_grp <- renderPlotly({
+    req(transformed_data())
+    
+    data <- transformed_data() %>%
+      count(Horaires, Sexe)
+    
+    total <- sum(data$n)
+    
+    # data <- data %>%
+    #   mutate(n = round((n / total) * 100, 2))
+    
+    total_par_categorie <- data %>%
+      group_by(Sexe) %>%
+      summarise(total = sum(n))
+    
+    # Calculer le pourcentage par catégorie
+    data <- data %>%
+      left_join(total_par_categorie, by = "Sexe") %>%
+      mutate(n = round((n / total) * 100, 2)) %>%
+      select(-total)
+    
+    # Définition des couleurs (rose pour Femme, bleu pour Homme)
+    couleurs_sexe <- c("Femme" = "pink", "Homme" = "skyblue")
+    
+    plot_ly(data, 
+            x = ~Horaires, 
+            y = ~n, 
+            color = ~Sexe, 
+            colors = couleurs_sexe, 
+            type = 'bar', 
+            text = ~n,  
+            textposition = 'auto', 
+            textfont = list(size = 14, color = "black")) %>%
+      layout(
+        title = input$title_par_heures_sexe_perc_grp,
+        xaxis = list(title = "Heures"),
+        yaxis = list(title = "Pourcentage (%)"),
+        showlegend = TRUE
+      )
+  })
+  
   # 11. Nb de personnes par catégorie 
   
   output$plot_personnes_par_categorie <- renderPlotly({
@@ -1288,10 +1446,86 @@ server <- function(input, output, session) {
       layout(
         title = input$title_par_nb_groupe_perc,
         xaxis = list(title = "Catégorie"),
+        yaxis = list(title = "Pourcentage (%)"),
+        showlegend = TRUE
+      )
+  })
+  
+  
+  
+  output$plot_personnes_par_genre <- renderPlotly({
+    req(transformed_data())
+    
+    data <- transformed_data() %>%
+      distinct(joueurs, Sexe, .keep_all = TRUE) %>%  # Garder une seule occurrence par joueur
+      count(Sexe)  # Compter le nombre de personnes uniques par catégorie
+    
+    couleurs_sexe <- c("Femme" = "pink", "Homme" = "skyblue")
+    
+    plot_ly(data, 
+            x = ~Sexe, 
+            y = ~n, 
+            type = 'bar', 
+            color = ~Sexe, 
+            colors = couleurs_sexe,
+            text = ~n,  
+            textposition = 'auto', 
+            textfont = list(size = 14, color = "black")) %>%
+      layout(
+        title = input$title_par_nb_genre,
+        xaxis = list(title = "Genre"),
         yaxis = list(title = "Nombre de Personnes"),
         showlegend = TRUE
       )
   })
+  
+  output$plot_personnes_par_genre_perc <- renderPlotly({
+    req(transformed_data())
+    
+    data <- transformed_data() %>%
+      distinct(joueurs, Sexe, .keep_all = TRUE) %>%  # Garder une seule occurrence par joueur
+      count(Sexe)  # Compter le nombre de personnes uniques par catégorie
+    
+    total <- sum(data$n)
+    
+    data <- data %>%
+      mutate(n = round((n / total) * 100, 2)) 
+    
+    couleurs_sexe <- c("Femme" = "pink", "Homme" = "skyblue")
+    
+    plot_ly(data, 
+            x = ~Sexe, 
+            y = ~n, 
+            type = 'bar', 
+            color = ~Sexe, 
+            colors = couleurs_sexe,
+            text = ~n,  
+            textposition = 'auto', 
+            textfont = list(size = 14, color = "black")) %>%
+      layout(
+        title = input$title_par_nb_genre_perc,
+        xaxis = list(title = "Genre"),
+        yaxis = list(title = "Pourcentage (%)"),
+        showlegend = TRUE
+      )
+  })
+  
+  
+  output$ratio2 <- renderText({
+    req(transformed_data())
+    data <- transformed_data() %>%
+      distinct(joueurs, Sexe, .keep_all = TRUE) %>%  # Garder une seule occurrence par joueur
+      select(Sexe)  # Comptage de nombre de personnes par sexe
+
+
+    nbF <- sum(data$Sexe=="Femme")
+    nbH <- sum(data$Sexe=="Homme")
+    ratio <- max(nbF, nbH) / min(nbF, nbH)
+    paste("Le ratio est de :", round(ratio,2),".\nC'est à dire, qu'il y a ",
+          round(ratio,2),ifelse(max(nbF, nbH)==nbH,"hommes pour une femme.",
+                                "femmes pour un homme.") )
+  })
+  
   
   # 12. Nb de personnes par catégorie selon le genre
   
@@ -1322,7 +1556,7 @@ server <- function(input, output, session) {
       )
   })  
 
-  output$plot_personnes_par_categorie_par_genre_perc <- renderPlotly({
+  output$plot_personnes_par_categorie_par_genre_perc_ens <- renderPlotly({
     req(transformed_data())
     
     data <- transformed_data() %>%
@@ -1334,9 +1568,6 @@ server <- function(input, output, session) {
     data <- data %>%
       mutate(n = round((n / total) * 100, 2))
     
-    
-    
-    
     # total_par_categorie <- data %>%
     #   group_by(Groupe) %>%
     #   summarise(total = sum(n))
@@ -1346,8 +1577,50 @@ server <- function(input, output, session) {
     #   left_join(total_par_categorie, by = "Groupe") %>%
     #   mutate(n = round((n / total) * 100, 2)) %>%
     #   select(-total)
+
+    
+    couleurs_sexe <- c("Femme" = "pink", "Homme" = "skyblue")
     
     
+    plot_ly(data, 
+            x = ~Groupe, 
+            y = ~n, 
+            type = 'bar', 
+            color = ~Sexe, 
+            colors = couleurs_sexe, 
+            text = ~n,  
+            textposition = 'auto', 
+            textfont = list(size = 14, color = "black")) %>%
+      layout(
+        title = input$title_par_nb_groupe_genre_perc_ens,
+        xaxis = list(title = "Catégorie"),
+        yaxis = list(title = "Pourcentage (%)"),
+        showlegend = TRUE
+      )
+  }) 
+  
+  
+  output$plot_personnes_par_categorie_par_genre_perc_grp <- renderPlotly({
+    req(transformed_data())
+    
+    data <- transformed_data() %>%
+      distinct(joueurs, Groupe, .keep_all = TRUE) %>%  # Garder une seule occurrence par joueur
+      count(Groupe, Sexe)  # Compter le nombre de personnes uniques par catégorie
+    
+    total <- sum(data$n)
+    
+    # data <- data %>%
+    #   mutate(n = round((n / total) * 100, 2))
+    
+    total_par_categorie <- data %>%
+      group_by(Groupe) %>%
+      summarise(total = sum(n))
+
+    # Calculer le pourcentage par catégorie
+    data <- data %>%
+      left_join(total_par_categorie, by = "Groupe") %>%
+      mutate(n = round((n / total) * 100, 2)) %>%
+      select(-total)
     
     
     couleurs_sexe <- c("Femme" = "pink", "Homme" = "skyblue")
@@ -1363,7 +1636,7 @@ server <- function(input, output, session) {
             textposition = 'auto', 
             textfont = list(size = 14, color = "black")) %>%
       layout(
-        title = input$title_par_nb_groupe_genre_perc,
+        title = input$title_par_nb_groupe_genre_perc_grp,
         xaxis = list(title = "Catégorie"),
         yaxis = list(title = "Pourcentage (%)"),
         showlegend = TRUE
@@ -1372,6 +1645,7 @@ server <- function(input, output, session) {
   
   
   # 13. Nb de réservation par jour et par horaire 
+  
   
   output$plot_horaires_par_jour_lundi <- renderPlotly({
     req(transformed_data())
@@ -1388,7 +1662,7 @@ server <- function(input, output, session) {
             marker = list(color = 'lightblue'),
             text = ~n, textposition = 'outside') %>% 
       layout(
-        title = "Lundi",
+        title = input$title_horaires_par_jour_lundi,
         xaxis = list(title = "Horaires", tickangle = -45),
         yaxis = list(title = "Nombre de Réservations"),
         showlegend = FALSE
@@ -1410,7 +1684,7 @@ server <- function(input, output, session) {
             marker = list(color = 'lightblue'),
             text = ~n, textposition = 'outside') %>% 
       layout(
-        title = "Mardi",
+        title = input$title_horaires_par_jour_mardi,
         xaxis = list(title = "Horaires", tickangle = -45),
         yaxis = list(title = "Nombre de Réservations"),
         showlegend = FALSE
@@ -1432,7 +1706,7 @@ server <- function(input, output, session) {
             marker = list(color = 'lightblue'),
             text = ~n, textposition = 'outside') %>% 
       layout(
-        title = "Mercredi",
+        title = input$title_horaires_par_jour_mercredi,
         xaxis = list(title = "Horaires", tickangle = -45),
         yaxis = list(title = "Nombre de Réservations"),
         showlegend = FALSE
@@ -1454,7 +1728,7 @@ server <- function(input, output, session) {
             marker = list(color = 'lightblue'),
             text = ~n, textposition = 'outside') %>% 
       layout(
-        title = "Jeudi",
+        title = input$title_horaires_par_jour_jeudi,
         xaxis = list(title = "Horaires", tickangle = -45),
         yaxis = list(title = "Nombre de Réservations"),
         showlegend = FALSE
@@ -1476,7 +1750,7 @@ server <- function(input, output, session) {
             marker = list(color = 'lightblue'),
             text = ~n, textposition = 'outside') %>% 
       layout(
-        title = "Vendredi",
+        title = input$title_horaires_par_jour_vendredi,
         xaxis = list(title = "Horaires", tickangle = -45),
         yaxis = list(title = "Nombre de Réservations"),
         showlegend = FALSE
@@ -1498,7 +1772,7 @@ server <- function(input, output, session) {
             marker = list(color = 'lightblue'),
             text = ~n, textposition = 'outside') %>% 
       layout(
-        title = "Samedi",
+        title = input$title_horaires_par_jour_samedi,
         xaxis = list(title = "Horaires", tickangle = -45),
         yaxis = list(title = "Nombre de Réservations"),
         showlegend = FALSE
@@ -1520,7 +1794,7 @@ server <- function(input, output, session) {
             marker = list(color = 'lightblue'),
             text = ~n, textposition = 'outside') %>% 
       layout(
-        title =  "Dimanche",
+        title = input$title_horaires_par_jour_dimanche,
         xaxis = list(title = "Horaires", tickangle = -45),
         yaxis = list(title = "Nombre de Réservations"),
         showlegend = FALSE
@@ -1547,7 +1821,7 @@ server <- function(input, output, session) {
             type = 'bar', 
             text = ~n, textposition = 'outside') %>% 
       layout(
-        title = "Lundi",
+        title = input$title_horaires_par_jour_categorie_lundi,
         xaxis = list(title = "Horaires", tickangle = -45),
         yaxis = list(title = "Nombre de Réservations"),
         showlegend = TRUE
@@ -1568,7 +1842,7 @@ server <- function(input, output, session) {
             type = 'bar',
             text = ~n, textposition = 'outside') %>% 
       layout(
-        title = "Mardi",
+        title = input$title_horaires_par_jour_categorie_mardi,
         xaxis = list(title = "Horaires", tickangle = -45),
         yaxis = list(title = "Nombre de Réservations"),
         showlegend = TRUE
@@ -1589,7 +1863,7 @@ server <- function(input, output, session) {
             type = 'bar',
             text = ~n, textposition = 'outside') %>% 
       layout(
-        title = "Mercredi",
+        title = input$title_horaires_par_jour_categorie_mercredi,
         xaxis = list(title = "Horaires", tickangle = -45),
         yaxis = list(title = "Nombre de Réservations"),
         showlegend = TRUE
@@ -1610,7 +1884,7 @@ server <- function(input, output, session) {
             type = 'bar', 
             text = ~n, textposition = 'outside') %>% 
       layout(
-        title = "Jeudi",
+        title = input$title_horaires_par_jour_categorie_jeudi,
         xaxis = list(title = "Horaires", tickangle = -45),
         yaxis = list(title = "Nombre de Réservations"),
         showlegend = TRUE
@@ -1631,7 +1905,7 @@ server <- function(input, output, session) {
             type = 'bar',
             text = ~n, textposition = 'outside') %>% 
       layout(
-        title = "Vendredi",
+        title = input$title_horaires_par_jour_categorie_vendredi,
         xaxis = list(title = "Horaires", tickangle = -45),
         yaxis = list(title = "Nombre de Réservations"),
         showlegend = TRUE
@@ -1652,7 +1926,7 @@ server <- function(input, output, session) {
             type = 'bar',
             text = ~n, textposition = 'outside') %>% 
       layout(
-        title = "Samedi",
+        title = input$title_horaires_par_jour_categorie_samedi,
         xaxis = list(title = "Horaires", tickangle = -45),
         yaxis = list(title = "Nombre de Réservations"),
         showlegend = TRUE
@@ -1673,7 +1947,7 @@ server <- function(input, output, session) {
             type = 'bar',
             text = ~n, textposition = 'outside') %>% 
       layout(
-        title =  "Dimanche",
+        title = input$title_horaires_par_jour_categorie_dimanche,
         xaxis = list(title = "Horaires", tickangle = -45),
         yaxis = list(title = "Nombre de Réservations"),
         showlegend = TRUE
@@ -1703,7 +1977,7 @@ server <- function(input, output, session) {
             type = 'bar', 
             text = ~n, textposition = 'outside') %>% 
       layout(
-        title = "Lundi",
+        title = input$title_horaires_par_jour_genre_lundi,
         xaxis = list(title = "Horaires", tickangle = -45),
         yaxis = list(title = "Nombre de Réservations"),
         showlegend = TRUE
@@ -1727,7 +2001,7 @@ server <- function(input, output, session) {
             type = 'bar',
             text = ~n, textposition = 'outside') %>% 
       layout(
-        title = "Mardi",
+        title = input$title_horaires_par_jour_genre_mardi,
         xaxis = list(title = "Horaires", tickangle = -45),
         yaxis = list(title = "Nombre de Réservations"),
         showlegend = TRUE
@@ -1751,7 +2025,7 @@ server <- function(input, output, session) {
             type = 'bar',
             text = ~n, textposition = 'outside') %>% 
       layout(
-        title = "Mercredi",
+        title = input$title_horaires_par_jour_genre_mercredi,
         xaxis = list(title = "Horaires", tickangle = -45),
         yaxis = list(title = "Nombre de Réservations"),
         showlegend = TRUE
@@ -1775,7 +2049,7 @@ server <- function(input, output, session) {
             type = 'bar', 
             text = ~n, textposition = 'outside') %>% 
       layout(
-        title = "Jeudi",
+        title = input$title_horaires_par_jour_genre_jeudi,
         xaxis = list(title = "Horaires", tickangle = -45),
         yaxis = list(title = "Nombre de Réservations"),
         showlegend = TRUE
@@ -1799,7 +2073,7 @@ server <- function(input, output, session) {
             type = 'bar',
             text = ~n, textposition = 'outside') %>% 
       layout(
-        title = "Vendredi",
+        title = input$title_horaires_par_jour_genre_vendredi,
         xaxis = list(title = "Horaires", tickangle = -45),
         yaxis = list(title = "Nombre de Réservations"),
         showlegend = TRUE
@@ -1823,7 +2097,7 @@ server <- function(input, output, session) {
             type = 'bar',
             text = ~n, textposition = 'outside') %>% 
       layout(
-        title = "Samedi",
+        title = input$title_horaires_par_jour_genre_samedi,
         xaxis = list(title = "Horaires", tickangle = -45),
         yaxis = list(title = "Nombre de Réservations"),
         showlegend = TRUE
@@ -1847,14 +2121,266 @@ server <- function(input, output, session) {
             type = 'bar',
             text = ~n, textposition = 'outside') %>% 
       layout(
-        title =  "Dimanche",
+        title = input$title_horaires_par_jour_genre_dimanche,
         xaxis = list(title = "Horaires", tickangle = -45),
         yaxis = list(title = "Nombre de Réservations"),
         showlegend = TRUE
       )
   })
   
- 
+
+  # 17. Horaire et Jour
+  
+  #Pas effacer demander si preference en 1 colonne et en 2 colonnes
+  
+  # output$select_hours_ui <- renderUI({
+  #   req(transformed_data()) 
+  #   
+  #   hours_choices <- transformed_data() %>%
+  #     pull(Horaires) %>%
+  #     unique() %>%
+  #     sort()
+  #   
+  #   radioButtons("choice_hours", "Choix horaires :", choices = hours_choices)
+  # })
+  # 
+  
+  
+  output$select_hours_ui <- renderUI({
+    req(transformed_data())
+    
+    hours_choices <- transformed_data() %>%
+      pull(Horaires) %>%
+      unique() %>%
+      sort()
+    
+    # Diviser les choix en deux colonnes
+    half <- ceiling(length(hours_choices) / 2)
+    col1 <- hours_choices[1:half]
+    col2 <- hours_choices[(half + 1):length(hours_choices)]
+    
+    # Créer deux listes de radioButtons
+    radio_col1 <- radioButtons("choice_hours", "Choix horaires :", choices = col1, inline = FALSE)
+    radio_col2 <- radioButtons("choice_hours", NULL, choices = col2, inline = FALSE, selected =col1[1])
+    
+    # Utiliser div pour organiser en deux colonnes
+    div(
+      style = "display: flex;",
+      div(style = "flex: 1;", radio_col1),
+      div(style = "flex: 1;", radio_col2)
+    )
+  })
+  
+
+  
+  output$plot_horaire_jour <- renderPlotly({
+    req(transformed_data())
+    
+    
+    
+    data_test <- transformed_data() %>%
+      filter(Horaires == input$choice_hours) %>% 
+      count(Jour)  
+    
+    days_order <- c("lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi", "dimanche")
+    
+    data_test <- data_test %>%
+      mutate(Jour = factor(Jour, levels = days_order))
+    
+    plot_ly(data_test, 
+            x = ~Jour, 
+            y = ~n, 
+            type = 'bar', 
+            marker = list(color = 'lightblue'),
+            text = ~n, textposition = 'outside') %>% 
+      layout(
+        title = paste0("Nombre de réservations pour l'horaire: ",input$choice_hours,"."),
+        xaxis = list(title = "Jours", tickangle = -45),
+        yaxis = list(title = "Nombre de Réservations"),
+        showlegend = FALSE
+      )
+  })
+
+  
+  output$plot_horaire_jour_cat <- renderPlotly({
+    req(transformed_data())
+    
+    
+    
+    data_test <- transformed_data() %>%
+      filter(Horaires == input$choice_hours) %>% 
+      count(Jour,Groupe)  
+    
+    days_order <- c("lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi", "dimanche")
+    
+    data_test <- data_test %>%
+      mutate(Jour = factor(Jour, levels = days_order))
+    
+    plot_ly(data_test, 
+            x = ~Jour, 
+            y = ~n, 
+            color = ~Groupe,
+            type = 'bar', 
+            text = ~n, textposition = 'outside') %>% 
+      layout(
+        title = paste0("Nombre de réservations pour l'horaire: ",input$choice_hours," en fonction des catégories."),
+        xaxis = list(title = "Jours", tickangle = -45),
+        yaxis = list(title = "Nombre de Réservations"),
+        showlegend = TRUE
+      )
+  })
+  
+  
+  output$plot_horaire_jour_genre <- renderPlotly({
+    req(transformed_data())
+    
+    
+    
+    data_test <- transformed_data() %>%
+      filter(Horaires == input$choice_hours) %>% 
+      count(Jour,Sexe)  
+    
+    days_order <- c("lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi", "dimanche")
+    
+    data_test <- data_test %>%
+      mutate(Jour = factor(Jour, levels = days_order))
+    
+    couleurs_sexe <- c("Femme" = "pink", "Homme" = "skyblue")
+    
+    plot_ly(data_test, 
+            x = ~Jour, 
+            y = ~n, 
+            color = ~Sexe, 
+            colors = couleurs_sexe,
+            type = 'bar', 
+            text = ~n, textposition = 'outside') %>% 
+      layout(
+        title = paste0("Nombre de réservations pour l'horaire: ",input$choice_hours," en fonction du genre."),
+        xaxis = list(title = "Jours", tickangle = -45),
+        yaxis = list(title = "Nombre de Réservations"),
+        showlegend = TRUE
+      )
+  })
+
+  
+  
+  
+  
+  
+  # Nouveaux adhérents
+  
+  output$plot_nv_adh <- renderPlotly({
+    req(inscrits_data())
+    
+    data <- inscrits_data() %>%
+      distinct(Nom.Prénom	, Nouvel.Adhérent, .keep_all = TRUE) %>%  # Garder une seule occurrence par joueur
+      count(Nouvel.Adhérent)  # Compter le nombre de personnes uniques par catégorie
+    
+    couleurs_nv_adh <- c("Oui" = "lightgreen", "Non" = "red")
+    
+    plot_ly(data, 
+            x = ~Nouvel.Adhérent, 
+            y = ~n, 
+            type = 'bar', 
+            color = ~Nouvel.Adhérent,
+            colors = couleurs_nv_adh,
+            text = ~n,  
+            textposition = 'auto', 
+            textfont = list(size = 14, color = "black")) %>%
+      layout(
+        title = input$title_nv_adh,
+        xaxis = list(title = "Nouveau Adhérent"),
+        yaxis = list(title = "Nombre de Personnes"),
+        showlegend = TRUE
+      )
+  })
+  
+  
+  output$plot_nv_adh_perc <- renderPlotly({
+    req(inscrits_data())
+    
+    data <- inscrits_data() %>%
+      distinct(Nom.Prénom	, Nouvel.Adhérent, .keep_all = TRUE) %>%  # Garder une seule occurrence par joueur
+      count(Nouvel.Adhérent)  # Compter le nombre de personnes uniques par catégorie
+    
+    
+    total <- sum(data$n)
+    
+    data <- data %>%
+      mutate(n = round((n / total) * 100, 2))
+    
+    couleurs_nv_adh <- c("Oui" = "lightgreen", "Non" = "red")
+    
+    plot_ly(data, 
+            x = ~Nouvel.Adhérent, 
+            y = ~n, 
+            type = 'bar', 
+            color = ~Nouvel.Adhérent,
+            colors = couleurs_nv_adh,
+            text = ~n,  
+            textposition = 'auto', 
+            textfont = list(size = 14, color = "black")) %>%
+      layout(
+        title = input$title_nv_adh_perc,
+        xaxis = list(title = "Nouveau Adhérent"),
+        yaxis = list(title = "Pourcentage (%)"),
+        showlegend = TRUE
+      )
+  })
+  
+
+  output$plot_nv_adh_sexe <- renderPlotly({
+    req(inscrits_data())
+    
+    data <- inscrits_data() %>%
+      distinct(Nom.Prénom	, Nouvel.Adhérent, .keep_all = TRUE) %>% 
+      count(Nouvel.Adhérent,Sexe)  
+    
+    couleurs_sexe <- c("Femme" = "pink", "Homme" = "skyblue")
+    
+    plot_ly(data, 
+            x = ~Nouvel.Adhérent, 
+            y = ~n, 
+            type = 'bar', 
+            color = ~Sexe, 
+            colors = couleurs_sexe,
+            text = ~n,  
+            textposition = 'auto', 
+            textfont = list(size = 14, color = "black")) %>%
+      layout(
+        title = input$title_nv_adh_sexe,
+        xaxis = list(title = "Nouveau Adhérent"),
+        yaxis = list(title = "Nombre de Personnes"),
+        showlegend = TRUE
+      )
+  })
+  
+  
+  output$plot_nv_adh_cat <- renderPlotly({
+    req(transformed_data())
+    
+    data <- transformed_data() %>%
+      distinct(joueurs	, Nouvel.Adhérent	, .keep_all = TRUE) %>%  
+      count(Nouvel.Adhérent	,Groupe) 
+    
+    couleurs_nv_adh <- c("Oui" = "lightgreen", "Non" = "red")
+    
+    plot_ly(data, 
+            x = ~Groupe	, 
+            y = ~n, 
+            type = 'bar', 
+            color = ~Nouvel.Adhérent,
+            colors = couleurs_nv_adh,
+            text = ~n,  
+            textposition = 'auto', 
+            textfont = list(size = 14, color = "black")) %>%
+      layout(
+        title = input$title_nv_adh_cat,
+        xaxis = list(title = "Nouveau Adhérent"),
+        yaxis = list(title = "Nombre de Personnes"),
+        showlegend = TRUE
+      )
+  })
   
   
   # 16. Classement de joueurs ayant plus joué
