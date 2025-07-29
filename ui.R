@@ -17,6 +17,7 @@ ui <- dashboardPage(skin="yellow",
     sidebarMenu(
       menuItem("Chargement des fichiers", tabName = "upload", icon = icon("file-upload")),
       menuItem("Gestion des Tarifs", tabName = "tarifs", icon = icon("tags")),
+      menuItem("Regrouper des horaires", tabName = "regroupement_horaires", icon = icon("clock")),
       menuItem("Analyses", tabName = "analyses", icon = icon("chart-bar"),
                menuSubItem(HTML("Nb de réservation par semaine"), tabName = "total"),
                
@@ -47,6 +48,8 @@ ui <- dashboardPage(skin="yellow",
                
               ),
       menuItem(HTML("Classement"), tabName = "classement", icon = icon("ranking-star"))
+     
+      
     )
   ),
   
@@ -115,26 +118,31 @@ ui <- dashboardPage(skin="yellow",
                   title = "Aperçu des Regroupements",
                   width = 8,
                   tableOutput("preview_tarifs"),
-                  actionButton("apply_tarif_settings", "Appliquer les regroupements")
-                )
+                  actionButton("apply_tarif_settings", "Appliquer les regroupements"),
+                  br(),
+                  br(),
+                  actionButton("reset_tarif_groupings", "Réinitialiser les regroupements", icon = icon("trash"), class = "btn-danger")
+                  
+                  )
               )
       ),
       
       # Onglets d'analyses
       tabItem(tabName = "total",
               fluidRow(
-                box(title = "Graphique des Réservations Totales", width = 12,
-                    textInput("title_total", "Titre du graphique :", "Nombre de Réservations Totales par semaine"),
-                    plotlyOutput("plot_total"))
+                box(title = textOutput("title_with_period"), width = 12, #"Graphique des Réservations Totales"
+                    textInput("title_total", "Titre du graphique :", "Nombre de Réservations par semaine"),
+                    plotlyOutput("plot_total"),br(), br(), br(), br(), br(), 
+                    textInput("title_total_categorie", "Titre du graphique :", "Nombre de Réservations par semaine et par catégorie"),
+                    plotlyOutput("plot_total_categorie"),br(), br(), br(), br(), br(), 
+                    textInput("title_total_genre", "Titre du graphique :", "Nombre de Réservations par semaine et par genre"),
+                    plotlyOutput("plot_total_genre"))
               )
       ),
       tabItem(tabName = "total_hf",
               fluidRow(
                 box(title = "Réservations par Genre", width = 12,
                     textInput("title_total_hf", "Titre du graphique :", "Nombre de Réservations par Genre en effectif"),
-                    # radioButtons("affichage_total_hf", "Affichage :", 
-                    #              choices = c("Effectif" = "count", "Pourcentage" = "percentage"),
-                    #              selected = "count"),
                     plotlyOutput("plot_total_hf"),br(), br(), br(), br(), br(), 
                     textInput("title_total_hf_perc", "Titre du graphique :", "Nombre de Réservations par Genre en pourcentage"),
                     plotlyOutput("plot_total_hf_perc"),br(), br(), br(), br(), br(), 
@@ -146,9 +154,6 @@ ui <- dashboardPage(skin="yellow",
               fluidRow(
                 box(title = "Graphique par Catégorie", width = 12,
                     textInput("title_par_categorie", "Titre du graphique :", "Nombre de Réservations par Catégorie"),
-                    # radioButtons("affichage_par_categorie", "Affichage :", 
-                    #              choices = c("Effectif" = "count", "Pourcentage" = "percentage"),
-                    #              selected = "count"),
                     plotlyOutput("plot_par_categorie"),br(), br(), br(), br(), br(), 
                     textInput("title_par_categorie_perc", "Titre du graphique :", "Nombre de Réservations par Catégorie en pourcentage"),
                     plotlyOutput("plot_par_categorie_perc"))
@@ -158,9 +163,6 @@ ui <- dashboardPage(skin="yellow",
               fluidRow(
                 box(title = "Réservations par Catégorie et par Genre", width = 12,
                     textInput("title_par_categorie_hf", "Titre du graphique :", "Nombre de Réservations par Catégorie et par Genre"),
-                    # radioButtons("affichage_par_categorie_hf", "Affichage :", 
-                    #              choices = c("Effectif" = "count", "Pourcentage" = "percentage"),
-                    #              selected = "count"),
                     plotlyOutput("plot_par_categorie_hf"),br(), br(), br(), br(), br(),
                     textInput("title_par_categorie_hf_perc_ens", "Titre du graphique :", "Nombre de Réservations par Catégorie et par Genre en pourcentage dans l'ensemble"),
                     plotlyOutput("plot_par_categorie_hf_perc_ens"),br(), br(), br(), br(), br(),
@@ -173,9 +175,6 @@ ui <- dashboardPage(skin="yellow",
               fluidRow(
                 box(title = "Graphique par Heures", width = 12,
                     textInput("title_par_heures", "Titre du graphique :", "Nombre de Réservations par Heures"),
-                    # radioButtons("affichage_par_heures", "Affichage :", 
-                    #              choices = c("Effectif" = "count", "Pourcentage" = "percentage"),
-                    #              selected = "count"),
                     plotlyOutput("plot_par_heures"),br(), br(), br(), br(), br(), 
                     textInput("title_par_heures_perc", "Titre du graphique :", "Nombre de Réservations par Heures en pourcentage"),
                     plotlyOutput("plot_par_heures_perc"))
@@ -201,9 +200,6 @@ ui <- dashboardPage(skin="yellow",
               fluidRow(
                 box(title = "Graphique par Jour", width = 12,
                     textInput("title_par_jour", "Titre du graphique :", "Nombre de Réservations par Jour"),
-                    # radioButtons("affichage_par_jour", "Affichage :", 
-                    #              choices = c("Effectif" = "count", "Pourcentage" = "percentage"),
-                    #              selected = "count"),
                     plotlyOutput("plot_par_jour"),br(), br(), br(), br(), br(), 
                     textInput("title_par_jour_perc", "Titre du graphique :", "Nombre de Réservations par Jour en pourcentage"),
                     plotlyOutput("plot_par_jour_perc"))
@@ -397,22 +393,37 @@ ui <- dashboardPage(skin="yellow",
       tabItem(tabName = "nv_adh",
                       fluidRow(
                         box(title = "Graphique du nombre de nouveau adhérent", width = 12,
-                            textInput("title_nv_adh", "Titre du graphique :", "Nombre de nouveaux adhérents"),
+                            textInput("title_nv_adh", "Titre du graphique :", "Nombre de nouveaux adhérents sur le fichier inscription"),
                             plotlyOutput("plot_nv_adh"),br(), br(), br(), br(), br(), 
                             
-                            textInput("title_nv_adh_perc", "Titre du graphique :", "Nombre de nouveaux adhérents en pourcentage"),
+                            textInput("title_nv_adh_perc", "Titre du graphique :", "Nombre de nouveaux adhérents sur le fichier inscription en pourcentage"),
                             plotlyOutput("plot_nv_adh_perc"),br(), br(), br(), br(), br(),
                             
-                            textInput("title_nv_adh_sexe", "Titre du graphique :", "Nombre de nouveaux adhérents par genre"),
+                            textInput("title_nv_adh_sexe", "Titre du graphique :", "Nombre de nouveaux adhérents sur le fichier inscription par genre"),
                             plotlyOutput("plot_nv_adh_sexe"),br(), br(), br(), br(), br(),
                             
                             textInput("title_nv_adh_cat", "Titre du graphique :", "Nombre de nouveaux adhérents par catégorie"),
-                            plotlyOutput("plot_nv_adh_cat"))
+                            plotlyOutput("plot_nv_adh_cat"),br(), br(), br(), br(), br(),
+                            
+                            textInput("title_nv_adh_cat_sexe", "Titre du graphique :", "Nombre de nouveaux adhérents par catégorie et par genre"),
+                            plotlyOutput("plot_nv_adh_cat_sexe"))
                       )
       ),
       
       tabItem(tabName = "classement",
                dataTableOutput("table_top_joueurs")   
+      ),
+      
+      
+      
+      tabItem(tabName = "regroupement_horaires",
+                fluidRow(
+                  box(title = "Options de regroupement des horaires", width = 12, status = "primary",
+                      checkboxInput("activate_grouping", "Activer le regroupement des horaires", value = FALSE),
+                      uiOutput("horaire_grouping_ui"),
+                      actionButton("save_grouping", "Enregistrer le regroupement")
+                  )
+                )
       )
       
       

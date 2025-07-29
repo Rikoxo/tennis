@@ -22,6 +22,7 @@ library(plotly)
 server <- function(input, output, session) {
   # Réactifs pour stocker les données
   reservations_data <- reactiveVal(list())
+  horaire_groups <- reactiveVal(list())
   inscrits_data <- reactiveVal(NULL)
   combined_data <- reactiveVal(NULL)
   grouped_tarifs <- reactiveVal(NULL)
@@ -61,7 +62,7 @@ server <- function(input, output, session) {
     # Charger et combiner les fichiers de réservations
     reservation_files <- input$reservations$datapath
     reservations_list <- lapply(reservation_files, function(file) {
-      df <- read.csv(file, header = TRUE, sep = ",", fileEncoding = "ISO-8859-13")
+      df <- read.csv(file, header = TRUE, sep = "\t", fileEncoding = "ISO-8859-13") #probleme sep="," ou \t
       
       if (!("Type" %in% colnames(df)) || !("Libellé" %in% colnames(df))) {
         warning(paste("Le fichier", file, "ne contient pas les colonnes nécessaires ('Type' ou 'Libellé')."))
@@ -190,6 +191,11 @@ server <- function(input, output, session) {
     combined_data(combined) # Mettre à jour les données combinées avec les groupes
   })
   
+  observeEvent(input$reset_tarif_groupings, {
+    tarif_groups(list())  # Réinitialise les regroupements
+    showNotification("Les regroupements de tarifs ont été réinitialisés.", type = "message")
+  })
+  
   
   
   
@@ -224,15 +230,72 @@ server <- function(input, output, session) {
   
   
   
+  # transformed_data <- reactive({
+  #   req(combined_data())
+  #   combined_data() %>%
+  #     mutate(
+  #       Date = as.Date(Date, format = "%d/%m/%Y"),
+  #       Jour = weekdays(Date)
+  #     ) %>%
+  #     filter(!is.na(Groupe)) %>% distinct(Date, Horaires, joueurs, .keep_all = TRUE) # Garder uniquement les lignes avec des groupes valides
+  # })
+  
+  
   transformed_data <- reactive({
     req(combined_data())
-    combined_data() %>% 
+    
+    df <- combined_data() %>%
       mutate(
         Date = as.Date(Date, format = "%d/%m/%Y"),
         Jour = weekdays(Date)
-      ) %>% 
-      filter(!is.na(Groupe)) %>% distinct(Date, Horaires, joueurs, .keep_all = TRUE) # Garder uniquement les lignes avec des groupes valides
+      ) %>%
+      filter(!is.na(Groupe)) %>%
+      distinct(Date, Horaires, joueurs, .keep_all = TRUE)  # Suppression des doublons
+    
+    # Appliquer les regroupements si activé
+    if (isTRUE(input$activate_grouping) &&
+        !is.null(horaire_groups()) &&
+        length(horaire_groups()) > 0) {
+      
+      regroupements <- horaire_groups()
+      
+      for (nom_nouveau in names(regroupements)) {
+        df$Horaires[df$Horaires %in% regroupements[[nom_nouveau]]] <- nom_nouveau
+      }
+      
+      
+      
+      original_order <- sort(unique(combined_data()$Horaires))
+      
+      # Étape 2 : Insérer les nouveaux horaires regroupés à la bonne position
+      regroupements <- horaire_groups()
+      
+      # On construit le nouvel ordre manuellement
+      new_order <- original_order
+      
+      for (nom_nouveau in names(regroupements)) {
+        # Retirer les anciens horaires fusionnés
+        new_order <- setdiff(new_order, regroupements[[nom_nouveau]])
+        # Ajouter le nom du groupe à la 1ère position du bloc regroupé
+        index_pos <- which(original_order %in% regroupements[[nom_nouveau]])[1]
+        if (!is.na(index_pos)) {
+          new_order <- append(new_order, nom_nouveau, after = index_pos - 1)
+        }
+      }
+      
+      # Étape 3 : Appliquer ce nouvel ordre comme facteur
+      df$Horaires <- factor(df$Horaires, levels = new_order)
+      
+      
+      
+      # Optionnel : forcer un facteur propre avec un ordre
+      #df$Horaires <- factor(df$Horaires, levels = unique(df$Horaires))
+    }
+    
+    return(df)
   })
+  
+
   
   output$preview_combined <- renderTable({
     req(transformed_data())
@@ -242,56 +305,26 @@ server <- function(input, output, session) {
   
   # 1. Nb de réservation total par semaine
   
- 
-
-  # output$plot_total <- renderPlotly({
-  #   req(transformed_data())
-  #   data <- transformed_data()
-  # 
-  #   # Extraire la période de l'analyse
-  #   date_min <- min(data$Date, na.rm = TRUE)
-  #   date_max <- max(data$Date, na.rm = TRUE)
-  # 
-  #   # Générer le titre avec la période
-  #   title_with_period <- paste("Réservations Totales du", format(date_min, "%d/%m/%Y"),
-  #                              "au", format(date_max, "%d/%m/%Y"))
-  # 
-  #   # Regrouper les données par semaine et ajouter le mois
-  #   data_weekly <- data %>%
-  #     mutate(
-  #       Semaine = format(Date, "%Y-%U"), # Année + numéro de semaine
-  #       Mois = factor(format(Date, "%m"),
-  #                     levels = sprintf("%02d", 1:12),
-  #                     labels = c("Jan", "Fév", "Mar", "Avr", "Mai", "Juin", "Juil", "Août", "Sep", "Oct", "Nov", "Déc"))
-  #     ) %>%
-  #     count(Semaine, Mois)  # Compter les réservations par semaine et mois
-  # 
-  #   # Création du graphique avec valeurs sur les barres
-  #   plot_ly(data_weekly, x = ~Semaine, y = ~n, color = ~Mois, type = "bar",
-  #           text = ~n, textposition = 'outside') %>%
-  #     layout(
-  #       title = title_with_period,
-  #       xaxis = list(title = "Semaine", tickangle = -45),
-  #       yaxis = list(title = "Nombre de Réservations"),
-  #       bargap = 0.2, # Espacement des barres
-  #       showlegend = TRUE
-  #     )
-  # })
-  # 
   
+  output$title_with_period <- renderText({
+    req(transformed_data())
+    data <- transformed_data()
+    
+    # Extraire la période de l'analyse
+    date_min <- min(data$Date, na.rm = TRUE)
+    date_max <- max(data$Date, na.rm = TRUE)
+    
+    # Titre avec période
+    paste("Nombre de Réservations par Semaine du", format(date_min, "%d/%m/%Y"),
+                               "au", format(date_max, "%d/%m/%Y"))
+    
+  }) # Pour le titre (avoir le debut et la fin des semaines)
   
   
   output$plot_total <- renderPlotly({
     req(transformed_data())
     data <- transformed_data()
 
-    # Extraire la période de l'analyse
-    date_min <- min(data$Date, na.rm = TRUE)
-    date_max <- max(data$Date, na.rm = TRUE)
-
-    # Titre avec période
-    title_with_period <- paste("Réservations Totales du", format(date_min, "%d/%m/%Y"),
-                               "au", format(date_max, "%d/%m/%Y"))
 
     # Générer les semaines (même coupure pour tout)
     data <- data %>%
@@ -312,12 +345,6 @@ server <- function(input, output, session) {
     data_weekly <- data %>%
       count(WeekStart) %>%
       left_join(week_month, by = "WeekStart") %>%
-      # mutate(
-      #   Mois = factor(Mois, levels = sprintf("%02d", 1:12),
-      #                 labels = c("Jan", "Fév", "Mar", "Avr", "Mai", "Juin",
-      #                            "Juil", "Août", "Sep", "Oct", "Nov", "Déc")),
-      #   WeekStart = as.Date(WeekStart)
-      # )
       
       mutate(
         Mois = factor(Mois, levels = sprintf("%02d", 1:12),
@@ -333,14 +360,119 @@ server <- function(input, output, session) {
     plot_ly(data_weekly, x = ~NumSemaine, y = ~n, color = ~Mois, type = "bar",
             text = ~n, textposition = 'outside') %>%
       layout(
-        title = title_with_period,
+        title = input$title_total,
         xaxis = list(title = "Semaine", tickangle = -45),
         yaxis = list(title = "Nombre de Réservations"),
         bargap = 0.2,
         showlegend = TRUE
       )
   })
+  
+  
+  output$plot_total_categorie <- renderPlotly({
+    req(transformed_data())
+    data <- transformed_data()
+    
+    
+    # Générer les semaines (même coupure pour tout)
+    data <- data %>%
+      mutate(
+        WeekStart = cut(Date, breaks = "week", start.on.monday = TRUE),
+        Mois = format(Date, "%m")
+        ) 
+    
+    
+    
+    # Trouver le mois majoritaire par semaine
+    week_month <- data %>%
+      group_by(WeekStart, Mois) %>%
+      summarise(nb = n(), .groups = "drop") %>%
+      group_by(WeekStart) %>%
+      slice_max(nb, n = 1, with_ties = FALSE) %>%
+      ungroup()
+    
+    # Compter les réservations par semaine
+    data_weekly <- data %>%
+      count(WeekStart, Groupe) %>%
+      left_join(week_month, by = "WeekStart") %>%
+   
+      
+      mutate(
+        Mois = factor(Mois, levels = sprintf("%02d", 1:12),
+                      labels = c("Janvier", "Février", "Mars", "Avril", "Mai", "Juin", 
+                                 "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre")),
+        WeekStart = as.Date(WeekStart),
+        NumSemaine = strftime(WeekStart,  format( "%Y-%U"))  # Numéro de semaine ISO
+      )  %>%
+      mutate(Mois = factor(Mois, levels = unique(Mois))) %>%  # <- Ordre dynamique
+      complete(Mois = factor(Mois, levels = unique(Mois)), Groupe, fill = list(n = 0)) 
+    
+    
+    # Graphique
+    plot_ly(data_weekly, x = ~NumSemaine, y = ~n, color = ~Groupe, type = "scatter", mode = 'markers+lines',
+            text = ~n, textposition = 'auto', 
+            textfont = list(size = 14, color = "black")) %>%
+      layout(
+        title = input$title_total_categorie,
+        xaxis = list(title = "Semaine", tickangle = -45),
+        yaxis = list(title = "Nombre de Réservations"),
+        showlegend = TRUE
+      )
+  })
 
+  
+  output$plot_total_genre <- renderPlotly({
+    req(transformed_data())
+    data <- transformed_data()
+    
+    
+    # Générer les semaines (même coupure pour tout)
+    data <- data %>%
+      mutate(
+        WeekStart = cut(Date, breaks = "week", start.on.monday = TRUE),
+        Mois = format(Date, "%m")
+      ) 
+    
+    
+    # Trouver le mois majoritaire par semaine
+    week_month <- data %>%
+      group_by(WeekStart, Mois) %>%
+      summarise(nb = n(), .groups = "drop") %>%
+      group_by(WeekStart) %>%
+      slice_max(nb, n = 1, with_ties = FALSE) %>%
+      ungroup()
+    
+    # Compter les réservations par semaine
+    data_weekly <- data %>%
+      count(WeekStart, Sexe) %>%
+      left_join(week_month, by = "WeekStart") %>%
+      
+     
+      mutate(
+        Mois = factor(Mois, levels = sprintf("%02d", 1:12),
+                      labels = c("Janvier", "Février", "Mars", "Avril", "Mai", "Juin", 
+                                 "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre")),
+        WeekStart = as.Date(WeekStart),
+        NumSemaine = strftime(WeekStart,  format( "%Y-%U"))  # Numéro de semaine ISO
+      )  %>%
+      mutate(Mois = factor(Mois, levels = unique(Mois))) %>% # <- Ordre dynamique
+      complete(Mois = factor(Mois, levels = unique(Mois)), Sexe, fill = list(n = 0))  
+    
+    # Définition des couleurs (rose pour Femme, bleu pour Homme)
+    couleurs_sexe <- c("Femme" = "pink", "Homme" = "skyblue")
+    
+    # Graphique
+    plot_ly(data_weekly, x = ~NumSemaine, y = ~n, color = ~Sexe, colors = couleurs_sexe, type = "scatter", mode = 'markers+lines',
+            text = ~n, textposition = 'auto', 
+            textfont = list(size = 14, color = "black")) %>%
+      layout(
+        title = input$title_total_genre,
+        xaxis = list(title = "Semaine", tickangle = -45),
+        yaxis = list(title = "Nombre de Réservations"),
+        showlegend = TRUE
+      )
+  })
+  
   
   # 2. Nb de réservation tot H et F
 
@@ -655,71 +787,6 @@ server <- function(input, output, session) {
   })
   
   
-  # output$plot_par_heures <- renderPlotly({
-  #   req(transformed_data())
-  #   data <- transformed_data()
-  #   
-  #   # Vérifier et convertir l'heure si nécessaire
-  #   data <- data %>%
-  #     mutate(
-  #       HeureBrute = substr(Horaires, 1, 5),  # Prend uniquement "hh:mm"
-  #       Heure = as.numeric(substr(HeureBrute, 1, 2)),  # Extraire l'heure (hh)
-  #       Minutes = as.numeric(substr(HeureBrute, 4, 5))  # Extraire les minutes (mm)
-  #     )
-  #   
-  #   # Vérifier si trop de réservations tombent à XXh30
-  #   heure_counts <- data %>%
-  #     group_by(Heure, Minutes) %>%
-  #     summarise(N = n(), .groups = "drop") %>%
-  #     pivot_wider(names_from = Minutes, values_from = N, values_fill = list(N = 0))
-  #   
-  #   # Déterminer si XXh30 doit être séparé ou fusionné
-  #   # heure_counts <- heure_counts %>%
-  #   #   mutate(
-  #   #     Total = 0 + 30,  # Total des réservations pour chaque heure
-  #   #     Ratio30 = ifelse(Total > 0, 30 / Total, 0),  # Proportion des XXh30
-  #   #     HeureFinale = ifelse(Ratio30 > 0.3, paste0(Heure, "h30"), paste0(Heure, "h"))
-  #   #   )
-  #   
-  #   # Arrondir les horaires et ajuster les heures pour la visualisation
-  #   heure_counts <- transformed_data() %>%
-  #     mutate(
-  #       # Extraire l'heure et les minutes pour chaque réservation
-  #       HeureArrondie = format(as.POSIXct(Horaires, format = "%H:%M"), "%H"),  # Récupère juste l'heure (en format "HH")
-  #       
-  #       # Arrondir si nécessaire (par exemple, 17h15 devient 17h00)
-  #       HeureArrondie = ifelse(format(as.POSIXct(Horaires, format = "%H:%M"), "%M") >= 30, 
-  #                              paste0(HeureArrondie, "h30"), 
-  #                              paste0(HeureArrondie, "h")),
-  #       
-  #       # Pour vérifier si les erreurs d'horaire sont en dehors des plages acceptées, on peut ajouter un filtre ici
-  #       HeureValidée = ifelse(format(as.POSIXct(Horaires, format = "%H:%M"), "%H") %in% 0:23, 
-  #                             HeureArrondie, NA)
-  #     )
-  #   
-  #   
-  #   # Appliquer cette correction aux données
-  #   data <- data %>%
-  #     left_join(select(heure_counts, Heure, HeureFinale), by = "Heure") %>%
-  #     mutate(HeureFinale = factor(HeureFinale, levels = unique(heure_counts$HeureFinale)))
-  #   
-  #   # Créer le graphique
-  #   # plot_ly(data, x = ~HeureFinale, type = "histogram", name = "Réservations par Heures") %>%
-  #   #   layout(
-  #   #     title = input$title_par_heures,
-  #   #     xaxis = list(title = "Heures"),
-  #   #     yaxis = list(title = "Nombre de Réservations"),
-  #   #     showlegend = FALSE
-  #   #   )
-  #   
-  #   plot_ly(heure_counts, x = ~HeureArrondie, type = 'histogram', name = "Réservations par Heure") %>%
-  #     layout(
-  #       title = input$title_par_heures,
-  #       xaxis = list(title = "Heure", tickmode = "array", tickvals = unique(heure_counts$HeureArrondie)),
-  #       yaxis = list(title = "Nombre de Réservations"),
-  #       showlegend = TRUE
-  #     )
-  # })
   
   
   # 6. Nb de réservation par heures et catégorie
@@ -736,10 +803,10 @@ server <- function(input, output, session) {
         title = input$title_par_heures_categorie,
         xaxis = list(title = "Heures"),
         yaxis = list(title =  "Nombre de Réservations"),
-        #yaxis = list(title = "Nombre de Réservations"),
         showlegend = TRUE
       )
   })
+  
   
   output$plot_par_heures_categorie_scat <- renderPlotly({
     req(transformed_data())
@@ -753,7 +820,15 @@ server <- function(input, output, session) {
       complete(Horaires = factor(hours_order, levels = hours_order), Groupe, fill = list(n = 0))
     
     
-    plot_ly(data, x = ~Horaires, y = ~n, color = ~Groupe, type = 'scatter', mode = 'markers+lines', text = ~n, textposition = 'outside') %>%
+    plot_ly(data, 
+            x = ~Horaires, 
+            y = ~n, 
+            color = ~Groupe, 
+            type = 'scatter', 
+            mode = 'markers+lines', 
+            text = ~n, 
+            textposition = 'auto', 
+            textfont = list(size = 14, color = "black")) %>%
       layout(
         title = input$title_par_heures_categorie_scat,
         xaxis = list(title = "Heures"),
@@ -1265,13 +1340,63 @@ server <- function(input, output, session) {
   
   # 10. Nb de réservations par heure selon le genre
   
+  # output$plot_par_heures_sexe <- renderPlotly({
+  #   req(transformed_data())
+  #   
+  #   data <- transformed_data() %>%
+  #     count(Horaires, Sexe)
+  #   
+  #   hours_order <- sort(unique(data$Horaires))
+  #   
+  #   data <- data %>%
+  #     mutate(Horaires = factor(Horaires, levels = hours_order)) %>%
+  #     complete(Horaires = factor(hours_order, levels = hours_order), Sexe, fill = list(n = 0))
+  #   
+  #   # Définition des couleurs (rose pour Femme, bleu pour Homme)
+  #   couleurs_sexe <- c("Femme" = "pink", "Homme" = "skyblue")
+  #   
+  #   plot_ly(data, 
+  #           x = ~Horaires, 
+  #           y = ~n, 
+  #           color = ~Sexe, 
+  #           colors = couleurs_sexe, 
+  #           type = 'bar', 
+  #           text = ~n,  
+  #           textposition = 'auto', 
+  #           textfont = list(size = 14, color = "black")) %>%
+  #     layout(
+  #       title = input$title_par_heure_sexe,
+  #       xaxis = list(title = "Heures"),
+  #       yaxis = list(title = "Nombre de Réservations"),
+  #       showlegend = TRUE
+  #     )
+  # })
+  
+  
   output$plot_par_heures_sexe <- renderPlotly({
     req(transformed_data())
     
     data <- transformed_data() %>%
       count(Horaires, Sexe)
     
-    # Définition des couleurs (rose pour Femme, bleu pour Homme)
+    # Construire l'ordre des horaires selon l'état du regroupement
+    if (isTRUE(input$activate_grouping) && !is.null(input$selected_horaires)) {
+      # Utiliser l'ordre des regroupements créés par l'utilisateur
+      regroupements <- input$selected_horaires
+      regrouped_labels <- names(regroupements)
+
+      # Ajouter les horaires non regroupés à la fin (ordre alphabétique)
+      autres_horaires <- setdiff(unique(data$Horaires), regrouped_labels)
+      hours_order <- sort(c(regrouped_labels, (autres_horaires)))  #c(regrouped_labels, sort(autres_horaires))
+    } else {
+      # Pas de regroupement : ordre alphabétique classique
+      hours_order <- sort(unique(data$Horaires))
+    }
+    
+    data <- data %>%
+      mutate(Horaires = factor(Horaires, levels = hours_order)) %>%
+      complete(Horaires = factor(hours_order, levels = hours_order), Sexe, fill = list(n = 0))
+    
     couleurs_sexe <- c("Femme" = "pink", "Homme" = "skyblue")
     
     plot_ly(data, 
@@ -1297,7 +1422,19 @@ server <- function(input, output, session) {
     data <- transformed_data() %>%
       count(Horaires, Sexe) 
     
-    hours_order <- sort(unique(data$Horaires))
+    # Construire l'ordre des horaires selon l'état du regroupement
+    if (isTRUE(input$activate_grouping) && !is.null(input$selected_horaires)) {
+      # Utiliser l'ordre des regroupements créés par l'utilisateur
+      regroupements <- input$selected_horaires
+      regrouped_labels <- names(regroupements)
+      
+      # Ajouter les horaires non regroupés à la fin (ordre alphabétique)
+      autres_horaires <- setdiff(unique(data$Horaires), regrouped_labels)
+      hours_order <- c(regrouped_labels, sort(autres_horaires))
+    } else {
+      # Pas de regroupement : ordre alphabétique classique
+      hours_order <- sort(unique(data$Horaires))
+    }
     
     data <- data %>%
       mutate(Horaires = factor(Horaires, levels = hours_order)) %>%
@@ -1336,6 +1473,24 @@ server <- function(input, output, session) {
     
     data <- data %>%
       mutate(n = round((n / total) * 100, 2))
+    
+    # Construire l'ordre des horaires selon l'état du regroupement
+    if (isTRUE(input$activate_grouping) && !is.null(input$selected_horaires)) {
+      # Utiliser l'ordre des regroupements créés par l'utilisateur
+      regroupements <- input$selected_horaires
+      regrouped_labels <- names(regroupements)
+      
+      # Ajouter les horaires non regroupés à la fin (ordre alphabétique)
+      autres_horaires <- setdiff(unique(data$Horaires), regrouped_labels)
+      hours_order <- c(regrouped_labels, sort(autres_horaires))
+    } else {
+      # Pas de regroupement : ordre alphabétique classique
+      hours_order <- sort(unique(data$Horaires))
+    }
+    
+    data <- data %>%
+      mutate(Horaires = factor(Horaires, levels = hours_order)) %>%
+      complete(Horaires = factor(hours_order, levels = hours_order), Sexe, fill = list(n = 0))
     
     # Définition des couleurs (rose pour Femme, bleu pour Homme)
     couleurs_sexe <- c("Femme" = "pink", "Homme" = "skyblue")
@@ -1377,6 +1532,25 @@ server <- function(input, output, session) {
       left_join(total_par_categorie, by = "Sexe") %>%
       mutate(n = round((n / total) * 100, 2)) %>%
       select(-total)
+    
+    
+    # Construire l'ordre des horaires selon l'état du regroupement
+    if (isTRUE(input$activate_grouping) && !is.null(input$selected_horaires)) {
+      # Utiliser l'ordre des regroupements créés par l'utilisateur
+      regroupements <- input$selected_horaires
+      regrouped_labels <- names(regroupements)
+      
+      # Ajouter les horaires non regroupés à la fin (ordre alphabétique)
+      autres_horaires <- setdiff(unique(data$Horaires), regrouped_labels)
+      hours_order <- c(regrouped_labels, sort(autres_horaires))
+    } else {
+      # Pas de regroupement : ordre alphabétique classique
+      hours_order <- sort(unique(data$Horaires))
+    }
+    
+    data <- data %>%
+      mutate(Horaires = factor(Horaires, levels = hours_order)) %>%
+      complete(Horaires = factor(hours_order, levels = hours_order), Sexe, fill = list(n = 0))
     
     # Définition des couleurs (rose pour Femme, bleu pour Homme)
     couleurs_sexe <- c("Femme" = "pink", "Homme" = "skyblue")
@@ -1451,8 +1625,6 @@ server <- function(input, output, session) {
       )
   })
   
-  
-  
   output$plot_personnes_par_genre <- renderPlotly({
     req(transformed_data())
     
@@ -1509,7 +1681,6 @@ server <- function(input, output, session) {
         showlegend = TRUE
       )
   })
-  
   
   output$ratio2 <- renderText({
     req(transformed_data())
@@ -1598,7 +1769,6 @@ server <- function(input, output, session) {
         showlegend = TRUE
       )
   }) 
-  
   
   output$plot_personnes_par_categorie_par_genre_perc_grp <- renderPlotly({
     req(transformed_data())
@@ -2263,10 +2433,7 @@ server <- function(input, output, session) {
   })
 
   
-  
-  
-  
-  
+
   # Nouveaux adhérents
   
   output$plot_nv_adh <- renderPlotly({
@@ -2381,7 +2548,45 @@ server <- function(input, output, session) {
         showlegend = TRUE
       )
   })
+
   
+  
+  output$plot_nv_adh_cat_sexe <- renderPlotly({
+    req(transformed_data())
+    
+    data <- transformed_data() %>%
+      distinct(joueurs, Nouvel.Adhérent, .keep_all = TRUE) %>%
+      count(Nouvel.Adhérent, Groupe, Sexe)
+    
+    couleurs_sexe <- c("Femme" = "pink", "Homme" = "skyblue")
+    
+    # Concaténer Groupe et Nouvel.Adhérent pour l’axe X
+    data <- data %>%
+      mutate(
+        x_label = paste(Groupe, Nouvel.Adhérent, sep = " - ")
+      )
+    
+    plot_ly(
+      data,
+      x = ~x_label,
+      y = ~n,
+      type = 'bar',
+      color = ~Sexe,
+      colors = couleurs_sexe,
+      text = ~n,
+      textposition = 'auto',
+      textfont = list(size = 14, color = "black")
+    ) %>%
+      layout(
+        title = input$title_nv_adh_cat_sexe,
+        xaxis = list(title = "Catégorie - Nouveau Adhérent", tickangle = -45),
+        yaxis = list(title = "Nombre de Personnes"),
+        barmode = "group",
+        showlegend = TRUE
+      )
+  })
+  
+
   
   # 16. Classement de joueurs ayant plus joué
   
@@ -2395,6 +2600,43 @@ server <- function(input, output, session) {
     
     DT::datatable(data, options = list(pageLength = 20, autoWidth = TRUE))
   }) 
+  
+  
+  
+  # Regroupement horaires
+  
+  output$horaire_grouping_ui <- renderUI({
+    req(transformed_data())
+    horaires_dispo <- sort(unique(transformed_data()$Horaires))
+    
+    tagList(
+      helpText(HTML("Créer des regroupements d'horaires. Exemple : 08:00 - 09:00 et 09:00 - 10:00 → 08:00 - 10:00.
+                    <br> Si vous devez effectuer plusieurs regroupements, traitez d'abord ceux avec les horaires les plus tardifs, puis passez aux horaires les moins avancés. " )),
+      selectizeInput("selected_horaires", "Choisir les horaires à regrouper :",
+                     choices = horaires_dispo, multiple = TRUE),
+      textInput("new_horaire_label", "Nom du nouvel horaire regroupé :", ""),
+      actionButton("add_horaire_group", "Ajouter ce regroupement"),
+      br(), br(),
+      h4("Regroupements définis :"),
+      verbatimTextOutput("defined_groups")
+    )
+  })
+  
+  
+  observeEvent(input$add_horaire_group, {
+    req(input$selected_horaires, input$new_horaire_label)
+    
+    current <- horaire_groups()
+    current[[input$new_horaire_label]] <- input$selected_horaires
+    horaire_groups(current)
+  })
+  
+  
+  output$defined_groups <- renderPrint({
+    req(horaire_groups())
+    horaire_groups()
+  })
+  
   
     
 } # Crochet de FIN
