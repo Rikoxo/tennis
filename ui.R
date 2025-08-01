@@ -1,3 +1,5 @@
+# Auteur: Richard SELVARADJOU
+
 #
 # This is the user-interface definition of a Shiny web application. You can
 # run the application by clicking 'Run App' above.
@@ -69,6 +71,9 @@ ui <- dashboardPage(skin="yellow",
                 box(
                   title = "Charger les fichiers CSV",
                   width = 4,
+                  radioButtons("sep_colonne","Choississez votre séparateur de colonne:",choices =c("Tabulation" = "\t",
+                                                                                                   "Virgule" = ",",
+                                                                                                   "Point-virgule" = ";")),
                   fileInput("reservations", 
                             "Fichiers des réservations (plusieurs fichiers possibles)",
                             accept = c(".csv"),
@@ -124,6 +129,18 @@ ui <- dashboardPage(skin="yellow",
                   actionButton("reset_tarif_groupings", "Réinitialiser les regroupements", icon = icon("trash"), class = "btn-danger")
                   
                   )
+              )
+      ),
+      
+      
+      
+      tabItem(tabName = "regroupement_horaires",
+              fluidRow(
+                box(title = "Options de regroupement des horaires", width = 12, status = "primary",
+                    checkboxInput("activate_grouping", "Activer le regroupement des horaires", value = FALSE),
+                    uiOutput("horaire_grouping_ui") #,
+                   # actionButton("save_grouping", "Enregistrer le regroupement")
+                )
               )
       ),
       
@@ -412,18 +429,6 @@ ui <- dashboardPage(skin="yellow",
       
       tabItem(tabName = "classement",
                dataTableOutput("table_top_joueurs")   
-      ),
-      
-      
-      
-      tabItem(tabName = "regroupement_horaires",
-                fluidRow(
-                  box(title = "Options de regroupement des horaires", width = 12, status = "primary",
-                      checkboxInput("activate_grouping", "Activer le regroupement des horaires", value = FALSE),
-                      uiOutput("horaire_grouping_ui"),
-                      actionButton("save_grouping", "Enregistrer le regroupement")
-                  )
-                )
       )
       
       

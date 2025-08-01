@@ -1,3 +1,5 @@
+# Auteur: Richard SELVARADJOU
+
 # This is the server logic of a Shiny web application. You can run the
 # application by clicking 'Run App' above.
 #
@@ -62,7 +64,7 @@ server <- function(input, output, session) {
     # Charger et combiner les fichiers de réservations
     reservation_files <- input$reservations$datapath
     reservations_list <- lapply(reservation_files, function(file) {
-      df <- read.csv(file, header = TRUE, sep = "\t", fileEncoding = "ISO-8859-13") #probleme sep="," ou \t
+      df <- read.csv(file, header = TRUE, sep = input$sep_colonne, fileEncoding = "ISO-8859-13") #probleme sep="," ou \t
       
       if (!("Type" %in% colnames(df)) || !("Libellé" %in% colnames(df))) {
         warning(paste("Le fichier", file, "ne contient pas les colonnes nécessaires ('Type' ou 'Libellé')."))
@@ -196,21 +198,7 @@ server <- function(input, output, session) {
     showNotification("Les regroupements de tarifs ont été réinitialisés.", type = "message")
   })
   
-  
-  
-  
-  # Appliquer les regroupements de tarifs
-  # observeEvent(input$apply_tarif_settings, {
-  #   req(combined_data(), tarif_groups())
-  #   
-  #   grouped <- combined_data()
-  #   for (group in tarif_groups()) {
-  #     grouped <- grouped %>%
-  #       mutate(`Tarif.attribué` = ifelse(`Tarif.attribué` %in% group$tarifs, group$group_name, `Tarif.attribué`))
-  #   }
-  #   
-  #   grouped_tarifs(grouped)
-  # })
+
   
   # Aperçu des données combinées
   output$preview_reservations <- renderTable({
@@ -223,23 +211,7 @@ server <- function(input, output, session) {
     head(inscrits_data())
   })
   
-  # output$preview_combined <- renderTable({
-  #   req(combined_data())
-  #   head(combined_data(),30)
-  # })
-  
-  
-  
-  # transformed_data <- reactive({
-  #   req(combined_data())
-  #   combined_data() %>%
-  #     mutate(
-  #       Date = as.Date(Date, format = "%d/%m/%Y"),
-  #       Jour = weekdays(Date)
-  #     ) %>%
-  #     filter(!is.na(Groupe)) %>% distinct(Date, Horaires, joueurs, .keep_all = TRUE) # Garder uniquement les lignes avec des groupes valides
-  # })
-  
+
   
   transformed_data <- reactive({
     req(combined_data())
@@ -1833,7 +1805,7 @@ server <- function(input, output, session) {
             text = ~n, textposition = 'outside') %>% 
       layout(
         title = input$title_horaires_par_jour_lundi,
-        xaxis = list(title = "Horaires", tickangle = -45),
+        xaxis = list(title = "Horaires"),
         yaxis = list(title = "Nombre de Réservations"),
         showlegend = FALSE
       )
@@ -1855,7 +1827,7 @@ server <- function(input, output, session) {
             text = ~n, textposition = 'outside') %>% 
       layout(
         title = input$title_horaires_par_jour_mardi,
-        xaxis = list(title = "Horaires", tickangle = -45),
+        xaxis = list(title = "Horaires"),
         yaxis = list(title = "Nombre de Réservations"),
         showlegend = FALSE
       )
@@ -1877,7 +1849,7 @@ server <- function(input, output, session) {
             text = ~n, textposition = 'outside') %>% 
       layout(
         title = input$title_horaires_par_jour_mercredi,
-        xaxis = list(title = "Horaires", tickangle = -45),
+        xaxis = list(title = "Horaires"),
         yaxis = list(title = "Nombre de Réservations"),
         showlegend = FALSE
       )
@@ -1899,7 +1871,7 @@ server <- function(input, output, session) {
             text = ~n, textposition = 'outside') %>% 
       layout(
         title = input$title_horaires_par_jour_jeudi,
-        xaxis = list(title = "Horaires", tickangle = -45),
+        xaxis = list(title = "Horaires"),
         yaxis = list(title = "Nombre de Réservations"),
         showlegend = FALSE
       )
@@ -1921,7 +1893,7 @@ server <- function(input, output, session) {
             text = ~n, textposition = 'outside') %>% 
       layout(
         title = input$title_horaires_par_jour_vendredi,
-        xaxis = list(title = "Horaires", tickangle = -45),
+        xaxis = list(title = "Horaires"),
         yaxis = list(title = "Nombre de Réservations"),
         showlegend = FALSE
       )
@@ -1943,7 +1915,7 @@ server <- function(input, output, session) {
             text = ~n, textposition = 'outside') %>% 
       layout(
         title = input$title_horaires_par_jour_samedi,
-        xaxis = list(title = "Horaires", tickangle = -45),
+        xaxis = list(title = "Horaires"),
         yaxis = list(title = "Nombre de Réservations"),
         showlegend = FALSE
       )
@@ -1965,7 +1937,7 @@ server <- function(input, output, session) {
             text = ~n, textposition = 'outside') %>% 
       layout(
         title = input$title_horaires_par_jour_dimanche,
-        xaxis = list(title = "Horaires", tickangle = -45),
+        xaxis = list(title = "Horaires"),
         yaxis = list(title = "Nombre de Réservations"),
         showlegend = FALSE
       )
@@ -1992,7 +1964,7 @@ server <- function(input, output, session) {
             text = ~n, textposition = 'outside') %>% 
       layout(
         title = input$title_horaires_par_jour_categorie_lundi,
-        xaxis = list(title = "Horaires", tickangle = -45),
+        xaxis = list(title = "Horaires"),
         yaxis = list(title = "Nombre de Réservations"),
         showlegend = TRUE
       )
@@ -2013,7 +1985,7 @@ server <- function(input, output, session) {
             text = ~n, textposition = 'outside') %>% 
       layout(
         title = input$title_horaires_par_jour_categorie_mardi,
-        xaxis = list(title = "Horaires", tickangle = -45),
+        xaxis = list(title = "Horaires"),
         yaxis = list(title = "Nombre de Réservations"),
         showlegend = TRUE
       )
@@ -2034,7 +2006,7 @@ server <- function(input, output, session) {
             text = ~n, textposition = 'outside') %>% 
       layout(
         title = input$title_horaires_par_jour_categorie_mercredi,
-        xaxis = list(title = "Horaires", tickangle = -45),
+        xaxis = list(title = "Horaires"),
         yaxis = list(title = "Nombre de Réservations"),
         showlegend = TRUE
       )
@@ -2055,7 +2027,7 @@ server <- function(input, output, session) {
             text = ~n, textposition = 'outside') %>% 
       layout(
         title = input$title_horaires_par_jour_categorie_jeudi,
-        xaxis = list(title = "Horaires", tickangle = -45),
+        xaxis = list(title = "Horaires"),
         yaxis = list(title = "Nombre de Réservations"),
         showlegend = TRUE
       )
@@ -2076,7 +2048,7 @@ server <- function(input, output, session) {
             text = ~n, textposition = 'outside') %>% 
       layout(
         title = input$title_horaires_par_jour_categorie_vendredi,
-        xaxis = list(title = "Horaires", tickangle = -45),
+        xaxis = list(title = "Horaires"),
         yaxis = list(title = "Nombre de Réservations"),
         showlegend = TRUE
       )
@@ -2097,7 +2069,7 @@ server <- function(input, output, session) {
             text = ~n, textposition = 'outside') %>% 
       layout(
         title = input$title_horaires_par_jour_categorie_samedi,
-        xaxis = list(title = "Horaires", tickangle = -45),
+        xaxis = list(title = "Horaires"),
         yaxis = list(title = "Nombre de Réservations"),
         showlegend = TRUE
       )
@@ -2118,7 +2090,7 @@ server <- function(input, output, session) {
             text = ~n, textposition = 'outside') %>% 
       layout(
         title = input$title_horaires_par_jour_categorie_dimanche,
-        xaxis = list(title = "Horaires", tickangle = -45),
+        xaxis = list(title = "Horaires"),
         yaxis = list(title = "Nombre de Réservations"),
         showlegend = TRUE
       )
@@ -2148,7 +2120,7 @@ server <- function(input, output, session) {
             text = ~n, textposition = 'outside') %>% 
       layout(
         title = input$title_horaires_par_jour_genre_lundi,
-        xaxis = list(title = "Horaires", tickangle = -45),
+        xaxis = list(title = "Horaires"),
         yaxis = list(title = "Nombre de Réservations"),
         showlegend = TRUE
       )
@@ -2172,7 +2144,7 @@ server <- function(input, output, session) {
             text = ~n, textposition = 'outside') %>% 
       layout(
         title = input$title_horaires_par_jour_genre_mardi,
-        xaxis = list(title = "Horaires", tickangle = -45),
+        xaxis = list(title = "Horaires"),
         yaxis = list(title = "Nombre de Réservations"),
         showlegend = TRUE
       )
@@ -2196,7 +2168,7 @@ server <- function(input, output, session) {
             text = ~n, textposition = 'outside') %>% 
       layout(
         title = input$title_horaires_par_jour_genre_mercredi,
-        xaxis = list(title = "Horaires", tickangle = -45),
+        xaxis = list(title = "Horaires"),
         yaxis = list(title = "Nombre de Réservations"),
         showlegend = TRUE
       )
@@ -2220,7 +2192,7 @@ server <- function(input, output, session) {
             text = ~n, textposition = 'outside') %>% 
       layout(
         title = input$title_horaires_par_jour_genre_jeudi,
-        xaxis = list(title = "Horaires", tickangle = -45),
+        xaxis = list(title = "Horaires"),
         yaxis = list(title = "Nombre de Réservations"),
         showlegend = TRUE
       )
@@ -2244,7 +2216,7 @@ server <- function(input, output, session) {
             text = ~n, textposition = 'outside') %>% 
       layout(
         title = input$title_horaires_par_jour_genre_vendredi,
-        xaxis = list(title = "Horaires", tickangle = -45),
+        xaxis = list(title = "Horaires"),
         yaxis = list(title = "Nombre de Réservations"),
         showlegend = TRUE
       )
@@ -2268,7 +2240,7 @@ server <- function(input, output, session) {
             text = ~n, textposition = 'outside') %>% 
       layout(
         title = input$title_horaires_par_jour_genre_samedi,
-        xaxis = list(title = "Horaires", tickangle = -45),
+        xaxis = list(title = "Horaires"),
         yaxis = list(title = "Nombre de Réservations"),
         showlegend = TRUE
       )
@@ -2292,7 +2264,7 @@ server <- function(input, output, session) {
             text = ~n, textposition = 'outside') %>% 
       layout(
         title = input$title_horaires_par_jour_genre_dimanche,
-        xaxis = list(title = "Horaires", tickangle = -45),
+        xaxis = list(title = "Horaires"), #, tickangle = -45
         yaxis = list(title = "Nombre de Réservations"),
         showlegend = TRUE
       )
@@ -2341,7 +2313,6 @@ server <- function(input, output, session) {
     )
   })
   
-
   
   output$plot_horaire_jour <- renderPlotly({
     req(transformed_data())
@@ -2365,7 +2336,7 @@ server <- function(input, output, session) {
             text = ~n, textposition = 'outside') %>% 
       layout(
         title = paste0("Nombre de réservations pour l'horaire: ",input$choice_hours,"."),
-        xaxis = list(title = "Jours", tickangle = -45),
+        xaxis = list(title = "Jours"),
         yaxis = list(title = "Nombre de Réservations"),
         showlegend = FALSE
       )
@@ -2394,7 +2365,7 @@ server <- function(input, output, session) {
             text = ~n, textposition = 'outside') %>% 
       layout(
         title = paste0("Nombre de réservations pour l'horaire: ",input$choice_hours," en fonction des catégories."),
-        xaxis = list(title = "Jours", tickangle = -45),
+        xaxis = list(title = "Jours"),
         yaxis = list(title = "Nombre de Réservations"),
         showlegend = TRUE
       )
@@ -2426,7 +2397,7 @@ server <- function(input, output, session) {
             text = ~n, textposition = 'outside') %>% 
       layout(
         title = paste0("Nombre de réservations pour l'horaire: ",input$choice_hours," en fonction du genre."),
-        xaxis = list(title = "Jours", tickangle = -45),
+        xaxis = list(title = "Jours"),
         yaxis = list(title = "Nombre de Réservations"),
         showlegend = TRUE
       )
@@ -2594,9 +2565,9 @@ server <- function(input, output, session) {
     req(transformed_data())
     
     data <- transformed_data()  %>% 
-      count(joueurs,Groupe, sort = TRUE) # Compter le nombre de parties par joueur 
+      count(joueurs,Groupe,Sexe, sort = TRUE) # Compter le nombre de parties par joueur 
     
-    colnames(data) <- c("Joueurs","Catégorie", "Nombre")
+    colnames(data) <- c("Joueurs","Catégorie","Genre", "Nombre")
     
     DT::datatable(data, options = list(pageLength = 20, autoWidth = TRUE))
   }) 
@@ -2616,9 +2587,10 @@ server <- function(input, output, session) {
                      choices = horaires_dispo, multiple = TRUE),
       textInput("new_horaire_label", "Nom du nouvel horaire regroupé :", ""),
       actionButton("add_horaire_group", "Ajouter ce regroupement"),
-      br(), br(),
-      h4("Regroupements définis :"),
-      verbatimTextOutput("defined_groups")
+      br(), br(), 
+      uiOutput("defined_groups")
+
+      #verbatimTextOutput("defined_groups")
     )
   })
   
@@ -2632,9 +2604,34 @@ server <- function(input, output, session) {
   })
   
   
-  output$defined_groups <- renderPrint({
+  # output$defined_groups <- renderPrint({
+  #   req(horaire_groups())
+  #   horaire_groups()
+  # })
+  # 
+  
+  # output$defined_groups <- renderPrint({
+  #   req(horaire_groups())
+  #   cat("Groupes d'horaires définis :\n\n")
+  #   lapply(names(horaire_groups()), function(nom_groupe) {
+  #     cat(paste0("➤ ", nom_groupe, ": ", paste(horaire_groups()[[nom_groupe]], collapse = ", "), "\n"))
+  #   })
+  # })
+
+  
+  output$defined_groups <- renderUI({
     req(horaire_groups())
-    horaire_groups()
+    tags$div(
+      tags$h4("Groupes d'horaires redéfinis :"),
+      tags$ul(
+        lapply(names(horaire_groups()), function(nom) {
+          tags$li(
+            tags$b(nom), " : ",
+            paste(horaire_groups()[[nom]], collapse = ", ")
+          )
+        })
+      )
+    )
   })
   
   
