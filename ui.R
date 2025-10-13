@@ -13,7 +13,7 @@ library(shinydashboard)
 library(plotly)
 
 ui <- dashboardPage(skin="yellow",
-  dashboardHeader(title = "Analyse Tennis"),
+  dashboardHeader(title = "Analyse Guc Tennis"),
   
   dashboardSidebar(
     sidebarMenu(
@@ -44,12 +44,11 @@ ui <- dashboardPage(skin="yellow",
                menuSubItem(HTML("Jour et horaires par genre"), tabName = "jour_horaire_genre"),
                menuSubItem(HTML("Horaires et jour"), tabName = "horaire_jour_all"),
                
-               menuSubItem("Nb de nouveau adherent", tabName = "nv_adh")#,
-               #menuSubItem(HTML("Nb de nouveau adherent par catégorie"), tabName = "nv_adh_categorie"),
-               #menuSubItem(HTML("Nb de nouveau adherent par genre"), tabName = "nv_adh_genre")
+               menuSubItem("Nb de nouveau adherent", tabName = "nv_adh")
                
               ),
-      menuItem(HTML("Classement"), tabName = "classement", icon = icon("ranking-star"))
+      menuItem(HTML("Classement"), tabName = "classement", icon = icon("ranking-star")),
+      menuItem(HTML("À propos"), tabName = "propos", icon = icon("fa-solid fa-address-card"))
      
       
     )
@@ -429,6 +428,9 @@ ui <- dashboardPage(skin="yellow",
       
       tabItem(tabName = "classement",
                dataTableOutput("table_top_joueurs")   
+      ),
+      tabItem(tabName = "propos",
+              uiOutput("info")    
       )
       
       

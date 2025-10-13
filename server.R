@@ -2635,5 +2635,25 @@ server <- function(input, output, session) {
   })
   
   
+  #output$info <- renderText({"Cette application a été réalisé dans le cadre d'un service civique en 2025, commandé par Mr Pierre CREPATTE. 
+   # \nL'outil a été developpé et déployé par Richard SELVARADJOU, alors étudiant en master de statistique et sciences des données."}) 
+  
+  # output$info <- renderText({
+  #   HTML(
+  #     paste0(
+  #       "<h3>Mon Titre</h3>",
+  #       "<p style='font-size: 18px;'>Cette application a été réalisé dans le cadre d'un service civique en 2025, commandé par Mr Pierre CREPATTE. 
+  #   \nL'outil a été developpé et déployé par Richard SELVARADJOU, alors étudiant en master de statistique et sciences des données..</p>"
+  #     )
+  #   )
+  # })
+  output$info <- renderUI({
+    tagList(
+      h3("À propos"),
+      p(style = "font-size: 20px;", "Cette application a été réalisé dans le cadre d'un service civique en 2025, commandé par Mr Pierre CREPATTE. 
+    ", br() ,"L'outil a été developpé et déployé par Richard SELVARADJOU, alors étudiant en master de statistique et sciences des données")
+    )
+  })
+  
     
 } # Crochet de FIN
