@@ -21,6 +21,16 @@ library(dplyr)
 library(tidyr)
 library(plotly)
 
+
+# a commenter si deploiement sur shinyapp + ligne a enlever ~ Ligne 232
+# get_weekday_en <- function(date) {
+#   old_locale <- Sys.getlocale("LC_TIME")
+#   Sys.setlocale("LC_TIME", "C")
+#   day <- weekdays(as.Date(date))
+#   Sys.setlocale("LC_TIME", old_locale)
+#   day
+# }
+
 server <- function(input, output, session) {
   # Réactifs pour stocker les données
   reservations_data <- reactiveVal(list())
@@ -219,7 +229,7 @@ server <- function(input, output, session) {
     df <- combined_data() %>%
       mutate(
         Date = as.Date(Date, format = "%d/%m/%Y"),
-        Jour = weekdays(Date)
+        Jour =  weekdays(Date) #get_weekday_en(Date)
       ) %>%
       filter(!is.na(Groupe)) %>%
       distinct(Date, Horaires, joueurs, .keep_all = TRUE)  # Suppression des doublons
@@ -724,7 +734,7 @@ server <- function(input, output, session) {
             marker = list(color = "lightblue")) %>%
       layout(
         title = input$title_par_heures,
-        xaxis = list(title = "Heures"),
+        xaxis = list(title = "Horaires"),
         #yaxis = list(title = "Nombre de Réservations"),
         yaxis = list(title =  "Nombre de Réservations"),
         showlegend = FALSE
@@ -752,7 +762,7 @@ server <- function(input, output, session) {
             marker = list(color = "lightblue")) %>%
       layout(
         title = input$title_par_heures_perc,
-        xaxis = list(title = "Heures"),
+        xaxis = list(title = "Horaires"),
         yaxis = list(title =  "Pourcentage (%)"),
         showlegend = FALSE
       )
@@ -773,7 +783,7 @@ server <- function(input, output, session) {
     plot_ly(data, x = ~Horaires, y = ~n, color = ~Groupe, type = 'bar', text = ~n, textposition = 'outside') %>%
       layout(
         title = input$title_par_heures_categorie,
-        xaxis = list(title = "Heures"),
+        xaxis = list(title = "Horaires"),
         yaxis = list(title =  "Nombre de Réservations"),
         showlegend = TRUE
       )
@@ -803,7 +813,7 @@ server <- function(input, output, session) {
             textfont = list(size = 14, color = "black")) %>%
       layout(
         title = input$title_par_heures_categorie_scat,
-        xaxis = list(title = "Heures"),
+        xaxis = list(title = "Horaires"),
         yaxis = list(title =  "Nombre de Réservations"),
         
         showlegend = TRUE
@@ -832,7 +842,7 @@ server <- function(input, output, session) {
     plot_ly(data, x = ~Horaires, y = ~n, color = ~Groupe, type = 'bar', text = ~n, textposition = 'outside') %>%
       layout(
         title = input$title_par_heures_categorie_perc_grp,
-        xaxis = list(title = "Heures"),
+        xaxis = list(title = "Horaires"),
         yaxis = list(title =  "Pourcentage (%)"),
         showlegend = TRUE
       )
@@ -866,13 +876,13 @@ server <- function(input, output, session) {
     plot_ly(data, x = ~Horaires, y = ~n, color = ~Groupe, type = 'bar', text = ~n, textposition = 'outside') %>%
       layout(
         title = input$title_par_heures_categorie_perc_ens,
-        xaxis = list(title = "Heures"),
+        xaxis = list(title = "Horaires"),
         yaxis = list(title =  "Pourcentage (%)"),
         showlegend = TRUE
       )
   })
   
-  
+
   # 7. Nb de réservation par jour
  
   output$plot_par_jour <- renderPlotly({
@@ -880,7 +890,12 @@ server <- function(input, output, session) {
     data <- transformed_data()
     
     # Définir l'ordre des jours de la semaine
-    days_order <- c("lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi", "dimanche")
+    #days_order <- c("lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi", "dimanche")
+    
+    days_order <- c(
+      "Monday", "Tuesday", "Wednesday",
+      "Thursday", "Friday", "Saturday", "Sunday"
+    )
     
     # Convertir la colonne Jour en facteur avec un ordre spécifique
     data <- data %>%
@@ -914,7 +929,12 @@ server <- function(input, output, session) {
     data <- transformed_data()
     
     # Définir l'ordre des jours de la semaine
-    days_order <- c("lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi", "dimanche")
+    #days_order <- c("lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi", "dimanche")
+    
+    days_order <- c(
+      "Monday", "Tuesday", "Wednesday",
+      "Thursday", "Friday", "Saturday", "Sunday"
+    )
     
     # Convertir la colonne Jour en facteur avec un ordre spécifique
     data <- data %>%
@@ -955,7 +975,12 @@ server <- function(input, output, session) {
     data <- transformed_data()
     
     # Définir l'ordre des jours de la semaine
-    days_order <- c("lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi", "dimanche")
+    #days_order <- c("lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi", "dimanche")
+    
+    days_order <- c(
+      "Monday", "Tuesday", "Wednesday",
+      "Thursday", "Friday", "Saturday", "Sunday"
+    )
     
     data <- data %>%
       mutate(Jour = factor(Jour, levels = days_order)) %>%
@@ -977,7 +1002,12 @@ server <- function(input, output, session) {
     library(tidyr)  # Assure-toi que ce package est chargé
     
     # Définir l'ordre des jours de la semaine
-    days_order <- c("lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi", "dimanche")
+    #days_order <- c("lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi", "dimanche")
+    
+    days_order <- c(
+      "Monday", "Tuesday", "Wednesday",
+      "Thursday", "Friday", "Saturday", "Sunday"
+    )
     
     data <- data %>%
       mutate(Jour = factor(Jour, levels = days_order)) %>%
@@ -1000,7 +1030,12 @@ server <- function(input, output, session) {
     data <- transformed_data()
     
     # Définir l'ordre des jours de la semaine
-    days_order <- c("lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi", "dimanche")
+    #days_order <- c("lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi", "dimanche")
+    
+    days_order <- c(
+      "Monday", "Tuesday", "Wednesday",
+      "Thursday", "Friday", "Saturday", "Sunday"
+    )
     
     data <- data %>%
       mutate(Jour = factor(Jour, levels = days_order)) %>%
@@ -1026,7 +1061,12 @@ server <- function(input, output, session) {
     data <- transformed_data()
     
     # Définir l'ordre des jours de la semaine
-    days_order <- c("lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi", "dimanche")
+    #days_order <- c("lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi", "dimanche")
+    
+    days_order <- c(
+      "Monday", "Tuesday", "Wednesday",
+      "Thursday", "Friday", "Saturday", "Sunday"
+    )
     
     # Compter les occurrences par jour et groupe
     data <- data %>%
@@ -1060,7 +1100,12 @@ server <- function(input, output, session) {
     data <- transformed_data()
     
     # Définir l'ordre des jours de la semaine
-    days_order <- c("lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi", "dimanche")
+    #days_order <- c("lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi", "dimanche")
+    
+    days_order <- c(
+      "Monday", "Tuesday", "Wednesday",
+      "Thursday", "Friday", "Saturday", "Sunday"
+    )
     
     # Compter les occurrences par jour et groupe
     data <- data %>%
@@ -1101,7 +1146,12 @@ server <- function(input, output, session) {
     couleurs_sexe <- c("Femme" = "pink", "Homme" = "skyblue")
     
     # Définir l'ordre des jours de la semaine
-    days_order <- c("lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi", "dimanche")
+    #days_order <- c("lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi", "dimanche")
+    
+    days_order <- c(
+      "Monday", "Tuesday", "Wednesday",
+      "Thursday", "Friday", "Saturday", "Sunday"
+    )
     
     data <- data %>%
       mutate(Jour = factor(Jour, levels = days_order))
@@ -1133,7 +1183,12 @@ server <- function(input, output, session) {
     couleurs_sexe <- c("Femme" = "pink", "Homme" = "skyblue")
     
     # Définir l'ordre des jours de la semaine
-    days_order <- c("lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi", "dimanche")
+    #days_order <- c("lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi", "dimanche")
+    
+    days_order <- c(
+      "Monday", "Tuesday", "Wednesday",
+      "Thursday", "Friday", "Saturday", "Sunday"
+    )
     
     data <- data %>%
       mutate(Jour = factor(Jour, levels = days_order)) %>%
@@ -1172,7 +1227,12 @@ server <- function(input, output, session) {
     couleurs_sexe <- c("Femme" = "pink", "Homme" = "skyblue")
     
     # Définir l'ordre des jours de la semaine
-    days_order <- c("lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi", "dimanche")
+    #days_order <- c("lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi", "dimanche")
+    
+    days_order <- c(
+      "Monday", "Tuesday", "Wednesday",
+      "Thursday", "Friday", "Saturday", "Sunday"
+    )
     
     data <- data %>%
       mutate(Jour = factor(Jour, levels = days_order))
@@ -1200,16 +1260,6 @@ server <- function(input, output, session) {
     data <- transformed_data() %>%
       count(Jour, Sexe)
     
-    # par_heures_categorie <- data %>%
-    #   group_by(Groupe) %>%
-    #   summarise(total = sum(n))
-    # 
-    # # Calculer le pourcentage par catégorie
-    # data <- data %>%
-    #   left_join(par_heures_categorie, by = "Groupe") %>%
-    #   mutate(n = round((n / total) * 100, 2)) %>%
-    #   select(-total)
-    # 
     
     total_par_groupe <- data %>%
       group_by(Sexe) %>%
@@ -1230,7 +1280,12 @@ server <- function(input, output, session) {
     couleurs_sexe <- c("Femme" = "pink", "Homme" = "skyblue")
     
     # Définir l'ordre des jours de la semaine
-    days_order <- c("lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi", "dimanche")
+    #days_order <- c("lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi", "dimanche")
+    
+    days_order <- c(
+      "Monday", "Tuesday", "Wednesday",
+      "Thursday", "Friday", "Saturday", "Sunday"
+    )
     
     data <- data %>%
       mutate(Jour = factor(Jour, levels = days_order))
@@ -1258,16 +1313,6 @@ server <- function(input, output, session) {
     data <- transformed_data() %>%
       count(Jour, Sexe)
     
-    # par_heures_categorie <- data %>%
-    #   group_by(Groupe) %>%
-    #   summarise(total = sum(n))
-    # 
-    # # Calculer le pourcentage par catégorie
-    # data <- data %>%
-    #   left_join(par_heures_categorie, by = "Groupe") %>%
-    #   mutate(n = round((n / total) * 100, 2)) %>%
-    #   select(-total)
-    # 
     
     total_par_groupe <- data %>%
       group_by(Jour) %>%
@@ -1288,7 +1333,12 @@ server <- function(input, output, session) {
     couleurs_sexe <- c("Femme" = "pink", "Homme" = "skyblue")
     
     # Définir l'ordre des jours de la semaine
-    days_order <- c("lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi", "dimanche")
+    #days_order <- c("lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi", "dimanche")
+    
+    days_order <- c(
+      "Monday", "Tuesday", "Wednesday",
+      "Thursday", "Friday", "Saturday", "Sunday"
+    )
     
     data <- data %>%
       mutate(Jour = factor(Jour, levels = days_order))
@@ -1312,37 +1362,7 @@ server <- function(input, output, session) {
   
   # 10. Nb de réservations par heure selon le genre
   
-  # output$plot_par_heures_sexe <- renderPlotly({
-  #   req(transformed_data())
-  #   
-  #   data <- transformed_data() %>%
-  #     count(Horaires, Sexe)
-  #   
-  #   hours_order <- sort(unique(data$Horaires))
-  #   
-  #   data <- data %>%
-  #     mutate(Horaires = factor(Horaires, levels = hours_order)) %>%
-  #     complete(Horaires = factor(hours_order, levels = hours_order), Sexe, fill = list(n = 0))
-  #   
-  #   # Définition des couleurs (rose pour Femme, bleu pour Homme)
-  #   couleurs_sexe <- c("Femme" = "pink", "Homme" = "skyblue")
-  #   
-  #   plot_ly(data, 
-  #           x = ~Horaires, 
-  #           y = ~n, 
-  #           color = ~Sexe, 
-  #           colors = couleurs_sexe, 
-  #           type = 'bar', 
-  #           text = ~n,  
-  #           textposition = 'auto', 
-  #           textfont = list(size = 14, color = "black")) %>%
-  #     layout(
-  #       title = input$title_par_heure_sexe,
-  #       xaxis = list(title = "Heures"),
-  #       yaxis = list(title = "Nombre de Réservations"),
-  #       showlegend = TRUE
-  #     )
-  # })
+
   
   
   output$plot_par_heures_sexe <- renderPlotly({
@@ -1382,7 +1402,7 @@ server <- function(input, output, session) {
             textfont = list(size = 14, color = "black")) %>%
       layout(
         title = input$title_par_heure_sexe,
-        xaxis = list(title = "Heures"),
+        xaxis = list(title = "Horaires"),
         yaxis = list(title = "Nombre de Réservations"),
         showlegend = TRUE
       )
@@ -1429,7 +1449,7 @@ server <- function(input, output, session) {
             textfont = list(size = 14, color = "black")) %>%
       layout(
         title = input$title_par_heures_sexe_scat,
-        xaxis = list(title = "Heures"),
+        xaxis = list(title = "Horaires"),
         yaxis = list(title = "Nombre de Réservations"),
         showlegend = TRUE
       )
@@ -1478,7 +1498,7 @@ server <- function(input, output, session) {
             textfont = list(size = 14, color = "black")) %>%
       layout(
         title = input$title_par_heure_sexe_perc_ens,
-        xaxis = list(title = "Heures"),
+        xaxis = list(title = "Horaires"),
         yaxis = list(title = "Pourcentage (%)"),
         showlegend = TRUE
       )
@@ -1538,7 +1558,7 @@ server <- function(input, output, session) {
             textfont = list(size = 14, color = "black")) %>%
       layout(
         title = input$title_par_heures_sexe_perc_grp,
-        xaxis = list(title = "Heures"),
+        xaxis = list(title = "Horaires"),
         yaxis = list(title = "Pourcentage (%)"),
         showlegend = TRUE
       )
@@ -1800,7 +1820,7 @@ server <- function(input, output, session) {
             x = ~Horaires, 
             y = ~n, 
             type = 'bar', 
-            #name = "Lundi",
+            name = "Lundi",
             marker = list(color = 'lightblue'),
             text = ~n, textposition = 'outside') %>% 
       layout(
@@ -1815,7 +1835,7 @@ server <- function(input, output, session) {
     req(transformed_data())
     
     data_lundi <- transformed_data() %>%
-      filter(Jour == "mardi") %>%
+      filter(Jour == "Tuesday") %>%
       count(Horaires)  # Compter le nombre de réservations par horaire
     
     plot_ly(data_lundi, 
@@ -1837,7 +1857,7 @@ server <- function(input, output, session) {
     req(transformed_data())
     
     data_lundi <- transformed_data() %>%
-      filter(Jour == "mercredi") %>%
+      filter(Jour == "Wednesday") %>%
       count(Horaires)  # Compter le nombre de réservations par horaire
     
     plot_ly(data_lundi, 
@@ -1859,7 +1879,7 @@ server <- function(input, output, session) {
     req(transformed_data())
     
     data_lundi <- transformed_data() %>%
-      filter(Jour == "jeudi") %>%
+      filter(Jour == "Thursday") %>%
       count(Horaires)  # Compter le nombre de réservations par horaire
     
     plot_ly(data_lundi, 
@@ -1881,7 +1901,7 @@ server <- function(input, output, session) {
     req(transformed_data())
     
     data_lundi <- transformed_data() %>%
-      filter(Jour == "vendredi") %>%
+      filter(Jour == "Friday") %>%
       count(Horaires)  # Compter le nombre de réservations par horaire
     
     plot_ly(data_lundi, 
@@ -1903,7 +1923,7 @@ server <- function(input, output, session) {
     req(transformed_data())
     
     data_lundi <- transformed_data() %>%
-      filter(Jour == "samedi") %>%
+      filter(Jour == "Saturday") %>%
       count(Horaires)  # Compter le nombre de réservations par horaire
     
     plot_ly(data_lundi, 
@@ -1925,7 +1945,7 @@ server <- function(input, output, session) {
     req(transformed_data())
     
     data_lundi <- transformed_data() %>%
-      filter(Jour == "dimanche") %>%
+      filter(Jour == "Sunday") %>%
       count(Horaires)  # Compter le nombre de réservations par horaire
     
     plot_ly(data_lundi, 
@@ -1953,7 +1973,7 @@ server <- function(input, output, session) {
     req(transformed_data())
     
     data_lundi <- transformed_data() %>%
-      filter(Jour == "lundi") %>%
+      filter(Jour == "Monday") %>%
       count(Horaires,Groupe)  # Compter le nombre de réservations par horaire
     
     plot_ly(data_lundi, 
@@ -1974,7 +1994,7 @@ server <- function(input, output, session) {
     req(transformed_data())
     
     data_lundi <- transformed_data() %>%
-      filter(Jour == "mardi") %>%
+      filter(Jour == "Tuesday") %>%
       count(Horaires,Groupe)  # Compter le nombre de réservations par horaire
     
     plot_ly(data_lundi, 
@@ -1995,7 +2015,7 @@ server <- function(input, output, session) {
     req(transformed_data())
     
     data_lundi <- transformed_data() %>%
-      filter(Jour == "mercredi") %>%
+      filter(Jour == "Wednesday") %>%
       count(Horaires,Groupe)  # Compter le nombre de réservations par horaire
     
     plot_ly(data_lundi, 
@@ -2016,7 +2036,7 @@ server <- function(input, output, session) {
     req(transformed_data())
     
     data_lundi <- transformed_data() %>%
-      filter(Jour == "jeudi") %>%
+      filter(Jour == "Thursday") %>%
       count(Horaires,Groupe)  # Compter le nombre de réservations par horaire
     
     plot_ly(data_lundi, 
@@ -2037,7 +2057,7 @@ server <- function(input, output, session) {
     req(transformed_data())
     
     data_lundi <- transformed_data() %>%
-      filter(Jour == "vendredi") %>%
+      filter(Jour == "Friday") %>%
       count(Horaires,Groupe)  # Compter le nombre de réservations par horaire
     
     plot_ly(data_lundi, 
@@ -2058,7 +2078,7 @@ server <- function(input, output, session) {
     req(transformed_data())
     
     data_lundi <- transformed_data() %>%
-      filter(Jour == "samedi") %>%
+      filter(Jour == "Saturday") %>%
       count(Horaires,Groupe)  # Compter le nombre de réservations par horaire
     
     plot_ly(data_lundi, 
@@ -2079,7 +2099,7 @@ server <- function(input, output, session) {
     req(transformed_data())
     
     data_lundi <- transformed_data() %>%
-      filter(Jour == "dimanche") %>%
+      filter(Jour == "Sunday") %>%
       count(Horaires,Groupe)  # Compter le nombre de réservations par horaire
     
     plot_ly(data_lundi, 
@@ -2108,7 +2128,7 @@ server <- function(input, output, session) {
     couleurs_sexe <- c("Femme" = "pink", "Homme" = "skyblue")
     
     data_lundi <- transformed_data() %>%
-      filter(Jour == "lundi") %>%
+      filter(Jour == "Monday") %>%
       count(Horaires,Sexe)  # Compter le nombre de réservations par horaire
     
     plot_ly(data_lundi, 
@@ -2132,7 +2152,7 @@ server <- function(input, output, session) {
     couleurs_sexe <- c("Femme" = "pink", "Homme" = "skyblue")
     
     data_lundi <- transformed_data() %>%
-      filter(Jour == "mardi") %>%
+      filter(Jour == "Tuesday") %>%
       count(Horaires,Sexe)  # Compter le nombre de réservations par horaire
     
     plot_ly(data_lundi, 
@@ -2156,7 +2176,7 @@ server <- function(input, output, session) {
     couleurs_sexe <- c("Femme" = "pink", "Homme" = "skyblue")
     
     data_lundi <- transformed_data() %>%
-      filter(Jour == "mercredi") %>%
+      filter(Jour == "Wednesday") %>%
       count(Horaires,Sexe)  # Compter le nombre de réservations par horaire
     
     plot_ly(data_lundi, 
@@ -2180,7 +2200,7 @@ server <- function(input, output, session) {
     couleurs_sexe <- c("Femme" = "pink", "Homme" = "skyblue")
     
     data_lundi <- transformed_data() %>%
-      filter(Jour == "jeudi") %>%
+      filter(Jour == "Thursday") %>%
       count(Horaires,Sexe)  # Compter le nombre de réservations par horaire
     
     plot_ly(data_lundi, 
@@ -2204,7 +2224,7 @@ server <- function(input, output, session) {
     couleurs_sexe <- c("Femme" = "pink", "Homme" = "skyblue")
     
     data_lundi <- transformed_data() %>%
-      filter(Jour == "vendredi") %>%
+      filter(Jour == "Friday") %>%
       count(Horaires,Sexe)  # Compter le nombre de réservations par horaire
     
     plot_ly(data_lundi, 
@@ -2228,7 +2248,7 @@ server <- function(input, output, session) {
     couleurs_sexe <- c("Femme" = "pink", "Homme" = "skyblue")
     
     data_lundi <- transformed_data() %>%
-      filter(Jour == "samedi") %>%
+      filter(Jour == "Saturday") %>%
       count(Horaires,Sexe)  # Compter le nombre de réservations par horaire
     
     plot_ly(data_lundi, 
@@ -2252,7 +2272,7 @@ server <- function(input, output, session) {
     couleurs_sexe <- c("Femme" = "pink", "Homme" = "skyblue")
     
     data_lundi <- transformed_data() %>%
-      filter(Jour == "dimanche") %>%
+      filter(Jour == "Sunday") %>%
       count(Horaires,Sexe)  # Compter le nombre de réservations par horaire
     
     plot_ly(data_lundi, 
@@ -2323,7 +2343,12 @@ server <- function(input, output, session) {
       filter(Horaires == input$choice_hours) %>% 
       count(Jour)  
     
-    days_order <- c("lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi", "dimanche")
+    #days_order <- c("lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi", "dimanche")
+    
+    days_order <- c(
+      "Monday", "Tuesday", "Wednesday",
+      "Thursday", "Friday", "Saturday", "Sunday"
+    )
     
     data_test <- data_test %>%
       mutate(Jour = factor(Jour, levels = days_order))
@@ -2352,7 +2377,12 @@ server <- function(input, output, session) {
       filter(Horaires == input$choice_hours) %>% 
       count(Jour,Groupe)  
     
-    days_order <- c("lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi", "dimanche")
+    #days_order <- c("lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi", "dimanche")
+    
+    days_order <- c(
+      "Monday", "Tuesday", "Wednesday",
+      "Thursday", "Friday", "Saturday", "Sunday"
+    )
     
     data_test <- data_test %>%
       mutate(Jour = factor(Jour, levels = days_order))
@@ -2381,7 +2411,12 @@ server <- function(input, output, session) {
       filter(Horaires == input$choice_hours) %>% 
       count(Jour,Sexe)  
     
-    days_order <- c("lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi", "dimanche")
+    #days_order <- c("lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi", "dimanche")
+    
+    days_order <- c(
+      "Monday", "Tuesday", "Wednesday",
+      "Thursday", "Friday", "Saturday", "Sunday"
+    )
     
     data_test <- data_test %>%
       mutate(Jour = factor(Jour, levels = days_order))
@@ -2581,7 +2616,8 @@ server <- function(input, output, session) {
     horaires_dispo <- sort(unique(transformed_data()$Horaires))
     
     tagList(
-      helpText(HTML("Créer des regroupements d'horaires. Exemple : 08:00 - 09:00 et 09:00 - 10:00 → 08:00 - 10:00.
+      helpText(HTML("Créer des regroupements d'horaires tout en gardant la même SYNTAXE. Exemple : 08:00 - 09:00 et 09:00 - 10:00 → 08:00 - 10:00.<br>
+                  Il est possible de regrouper plusieurs horaires.
                     <br> Si vous devez effectuer plusieurs regroupements, traitez d'abord ceux avec les horaires les plus tardifs, puis passez aux horaires les moins avancés. " )),
       selectizeInput("selected_horaires", "Choisir les horaires à regrouper :",
                      choices = horaires_dispo, multiple = TRUE),
@@ -2651,7 +2687,7 @@ server <- function(input, output, session) {
     tagList(
       h3("À propos"),
       p(style = "font-size: 20px;", "Cette application a été réalisé dans le cadre d'un service civique en 2025, commandé par Mr Pierre CREPATTE. 
-    ", br() ,"L'outil a été developpé et déployé par Richard SELVARADJOU, alors étudiant en master de statistique et sciences des données")
+    ", br() ,"L'outil a été développé et déployé par Richard SELVARADJOU, alors étudiant en master 2 de statistique et sciences des données.")
     )
   })
   
